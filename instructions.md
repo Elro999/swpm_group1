@@ -9,6 +9,9 @@ This repo belongs to **Group 1, Software Product Management (ISB, PGP Co'27, Ter
 | `research/participants.md` | Index of all 25 participants: code, profile, persona, links | Find who said what and which files to open |
 | `research/transcripts/` | 25 interview transcripts, one per participant | **Primary evidence**: quotes, behaviours, frequency of problems |
 | `research/personas/` | 5 files, one per teammate: personas + problem hypotheses + coded quotes | Each teammate's *interpretation* of their 5 interviews |
+| `course_material/` | Class notes, Sessions 1–7 (one file per session) | **The method**: frameworks, templates and PM practitioner rules to apply to the research (JTBD, problem statements, sizing, value proposition, MVP, metrics). Its `instructions.md` maps each session to the deliverable it feeds |
+
+**Research is the evidence; course material is the method.** Before producing any deliverable, read the relevant session(s) in `course_material/` and follow their templates and rules, then ground every claim in `research/`.
 
 More folders (synthesis, MVP, prototype, …) will be added when needed. Each folder has its own `instructions.md` and `log.md`. **Read the `instructions.md` of any folder before working in it.**
 

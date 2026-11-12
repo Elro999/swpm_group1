@@ -12,3 +12,8 @@
 - **What:** Created the repo skeleton: root `README.md`, `instructions.md`, `log.md`, `CLAUDE.md`, `AGENTS.md`, and the `research/` folder.
 - **Why:** Give every teammate and their agents one shared, well-labelled home for the user research behind our product.
 - **Files:** `README.md`, `instructions.md`, `log.md`, `CLAUDE.md`, `AGENTS.md`, `research/`
+
+## 2026-11-12: Rohith via Claude
+- **What:** Added `course_material/` (class notes for Sessions 1–7, with its own `instructions.md` and `log.md`). Added it to the folder map in `instructions.md`, with the rule "research is the evidence; course material is the method", and listed it in `README.md`.
+- **Why:** So every agent applies the course's frameworks and PM practitioner insights when building deliverables from the research.
+- **Files:** `course_material/` (9 files), `instructions.md`, `README.md`, `log.md`
