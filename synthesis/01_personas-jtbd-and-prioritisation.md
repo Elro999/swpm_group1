@@ -104,7 +104,7 @@ A person can sit in two personas. ADD-5 and SRI-3 do cases (B) *and* struggle wi
 
 ### D. Abhinav, the Placement Candidate Without a System (TEAM-SELECTED, 12 Nov discussion)
 
-> Added after the team discussion on 12 Nov evening, which chose this persona to build for because it fits what we can realistically build. Every trait is checked against the 25 interviews below. **Read the evidence-strength column:** the behaviours and pains are well supported, but the *life stage* (final-year undergrad) appears in **none** of our 25 interviews. All 25 have work experience. The persona deliberately does not claim interview inexperience, since we interviewed no first-time interviewees. That part is a hypothesis until we talk to 3–5 undergrads (S1: "Could anyone you interviewed be it?").
+> Added after the team discussion on 12 Nov evening, which chose this persona to build for because it fits what we can realistically build. Every trait is checked against the 25 interviews below. **Read the evidence-strength column:** the behaviours and pains are well supported, but the *life stage* (final-year undergrad) appears in **none** of our 25 interviews. All 25 have work experience. The life stage is a hypothesis until we talk to 3–5 undergrads (S1: "Could anyone you interviewed be it?"). The persona deliberately does not claim interview inexperience, since we interviewed no first-time interviewees.
 
 > "So my preparation right now is more broad and generic rather than focused." (ADD-2)
 > "When I felt bored, I was switching to GenMan." (ROH-3)
