@@ -27,3 +27,8 @@
 - **What:** Reordered the Persona D intro so "hypothesis" clearly refers to the undergrad life stage.
 - **Why:** The previous edit left the sentence ambiguous.
 - **Files:** `01_personas-jtbd-and-prioritisation.md`
+
+## 2026-11-12: Rohith via Claude
+- **What:** Removed "final-year undergrad" from Persona D. Who is now a student in placement season (MBA, 3–5 years' experience, 26–28), on and off campus, labelled Finding. Updated the TL;DR, the 4D intro and the validation note (it now tests the planner instead of the undergrad life stage).
+- **Why:** The team asked to drop the undergrad trait; none of the 25 interviews were undergrads.
+- **Files:** `01_personas-jtbd-and-prioritisation.md`
