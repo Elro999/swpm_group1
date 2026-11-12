@@ -22,3 +22,8 @@
 - **What:** Removed "first-time interviewer" as a trait of Persona D. Renamed it "Abhinav, the Placement Candidate Without a System"; removed first-timer wording from the TL;DR, the 4D intro, the Who row (and its ROH-3 / SAM-3 evidence), and the validation plan.
 - **Why:** The team flagged that none of the 25 interviews is a first-time interviewee, so the persona can't claim it.
 - **Files:** `01_personas-jtbd-and-prioritisation.md`
+
+## 2026-11-12: Rohith via Claude
+- **What:** Reordered the Persona D intro so "hypothesis" clearly refers to the undergrad life stage.
+- **Why:** The previous edit left the sentence ambiguous.
+- **Files:** `01_personas-jtbd-and-prioritisation.md`
