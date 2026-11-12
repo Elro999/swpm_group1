@@ -254,7 +254,7 @@ A table with columns: **Problem | Frequency (per person) | Severity | Existing s
 | G Unfamiliar-industry cases | Some cases | High when it hits | Casebook primers | Later |
 | H GD entry · job forms | Rare in sample (1 each) | Low to medium | Peers, career sites | Walk away |
 
-**Footer:** "Bottom-up: 15 of the 16 ISB interviewees raised feedback or practice-partner pain; 11 of the 17 campus candidates raised long answers. One participant estimates the cohort at ~840 (ADD-4) [VERIFY batch size before submitting]. Enough people to test with, not a market size."
+**Footer:** "Bottom-up: 15 of the 16 ISB interviewees raised feedback or practice-partner pain; 11 of the 17 campus candidates raised long answers. Our campus cohort is ~840. Enough people to test with, not a market size."
 
 ### Slide 19: Appendix A4 · Persona detail
 Three columns, one per persona (Abhinav, Kabir, Arjun). Each column lists **What success looks like** and **Trigger**:
