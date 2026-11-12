@@ -13,7 +13,7 @@
 - **Secondary: Kabir, the Case-Prep Grinder.** ISB case prep that stalls when partners are busy; AI interviewers are too easy; unfamiliar industries break recommendations (10 of 25, all on campus). A real problem, but a crowded one (ChatGPT/Claude voice, Nworks) and the fix (a good case interviewer or peer matching) won't fit in 8–10 hours.
 - **Tertiary: Arjun, the Off-Campus Switcher.** No placement ecosystem, learns by failing real interviews, spends days gathering company intel (6 of 25). The most severe pain per person, but hard to reach this week and needs data we don't have.
 - **Anti-persona: the technical-round grinder** (DSA, system design, GK recall). Already served by LeetCode and upvoted solutions (SAM-3, SAM-2).
-- **Update 12 Nov evening, team decision:** the team chose **D. Abhinav, the First-Timer Without a System** (section 4D) as the persona to build for: a final-year student on his first placement season with sporadic prep, who needs a planner, story discovery, story-to-JD fit and mock feedback. His behaviours and pains are backed by A and B's evidence; his demographic (undergrad, first-timer) is not yet in our sample. See 4D for the 3–5 interviews needed to close that gap.
+- **Update 12 Nov evening, team decision:** the team chose **D. Abhinav, the Placement Candidate Without a System** (section 4D) as the persona to build for: a final-year student in placement season with sporadic prep, who needs a planner, story discovery, story-to-JD fit and mock feedback. His behaviours and pains are backed by A and B's evidence; his life stage (undergrad) is not yet in our sample. See 4D.
 - **What runs through all three: nobody gets feedback that points to a specific moment** (15 of 25). Kiran's product delivers that first, so the MVP can later grow into Kabir's and Arjun's jobs.
 
 ---
@@ -102,16 +102,16 @@ A person can sit in two personas. ADD-5 and SRI-3 do cases (B) *and* struggle wi
 | **Today** | Claude/ChatGPT loaded with resume + JD (ROH-4, SRI-5); free tiers juggled for limits (SRI-4); LinkedIn posts for recent questions (SRI-5); alumni outreach (ROH-5); notes, or recording interviews against policy (ROH-4, ROH-5). |
 | **Switch / leave** | Switch: company-specific questions in one place (SRI-5: "a one-stop preparation platform"). Leave: generic role questions (SRI-5), lost context on follow-ups (SRI-4). |
 
-### D. Abhinav, the First-Timer Without a System (TEAM-SELECTED, 12 Nov discussion)
+### D. Abhinav, the Placement Candidate Without a System (TEAM-SELECTED, 12 Nov discussion)
 
-> Added after the team discussion on 12 Nov evening, which chose this persona to build for because it fits what we can realistically build. Every trait is checked against the 25 interviews below. **Read the evidence-strength column:** the behaviours and pains are well supported, but the *demographic* (final-year undergrad, first-ever interviews) appears in **none** of our 25 interviews. All 25 have work experience. That part is a hypothesis until we talk to 3–5 undergrads (S1: "Could anyone you interviewed be it?").
+> Added after the team discussion on 12 Nov evening, which chose this persona to build for because it fits what we can realistically build. Every trait is checked against the 25 interviews below. **Read the evidence-strength column:** the behaviours and pains are well supported, but the *life stage* (final-year undergrad) appears in **none** of our 25 interviews. All 25 have work experience. The persona deliberately does not claim interview inexperience, since we interviewed no first-time interviewees. That part is a hypothesis until we talk to 3–5 undergrads (S1: "Could anyone you interviewed be it?").
 
 > "So my preparation right now is more broad and generic rather than focused." (ADD-2)
 > "When I felt bored, I was switching to GenMan." (ROH-3)
 
 | Element | Detail | Evidence | Strength |
 |---|---|---|---|
-| **Who** | Abhinav, 21–22, final-year student facing his first placement season, on campus and also applying off campus. | No undergrads in sample. Closest: MBA candidates facing case and fit interviews for the first time ("case prep was something very new to me… I have not done it before", ROH-3); SAM-3 recalls "blanking out in an interview… back in college". On + off campus in parallel: SRI-1, SRI-3 hedge across tracks. | **Hypothesis** |
+| **Who** | Abhinav, 21–22, final-year student in placement season, on campus and also applying off campus. | No undergrads in sample. On + off campus in parallel: SRI-1, SRI-3 hedge across tracks and roles. | **Hypothesis** |
 | **Situation** | Classes, assignments and an active social life fill the day; prep happens in whatever gaps are left. | ~4 h class + 1–2 h submissions a day (ADD-1, ADD-4); "Life in a business school is fast… gym, runs" (SRI-2); case practice "became a socialization thing to just sit" (ADD-1). | Finding (7+) |
 | **Behaviour** | Prep is sporadic: no plan, or a plan he doesn't stick to; jumps between domains; prepares broadly because he doesn't know what to focus on. | ROH-3 switched domains when bored; ADD-2 "broad and generic"; ADD-3 "few days you just don't want to do it"; SRI-1 "I could definitely use better time management"; ADD-5 routine "disrupted"; ADD-2 forgot frameworks after a break. | Finding (T7 + T10, ~9) |
 | **Knowledge gap** | Doesn't know what interviewers ask or what they're really testing. | SAM-5 Googles generic questions; SAM-4 "tanked" by misreading what was assessed; ROH-5 collects 70 alumni questions; SRI-5 hunts LinkedIn for company questions; SAM-2 asked ChatGPT "what kind of stories should I think about". | Finding (~8) |
@@ -139,7 +139,7 @@ A person can sit in two personas. ADD-5 and SRI-3 do cases (B) *and* struggle wi
 
 **Overlap with A–C:** Abhinav is Kiran's story and delivery pains (A) plus Kabir's momentum and focus pains (B), in someone earlier in their career. Persona A's evidence carries over directly; what's new is the *planner*, which rests on the thinnest evidence (consistency and focus, 7–9 of 25) and has the most competition (calendars, Notion, to-do apps).
 
-**To close the gap before the deck:** run 3–5 quick interviews with final-year undergrads (juniors, siblings, campus contacts). Ask about the *last* time they prepared (S2 Mom Test): did they have a plan, did they stick to it, how did they pick their stories? If they don't confirm sporadic prep and a missing story bank, retarget Abhinav to "first-time *MBA* placement candidate". The evidence above already supports that version.
+**To close the gap before the deck:** run 3–5 quick interviews with final-year undergrads (juniors, siblings, campus contacts). Ask about the *last* time they prepared (S2 Mom Test): did they have a plan, did they stick to it, how did they pick their stories? If they don't confirm sporadic prep and a missing story bank, retarget Abhinav to an *MBA* placement candidate. The evidence above already supports that version.
 
 ### Anti-persona: the technical-round grinder
 

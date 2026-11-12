@@ -17,3 +17,8 @@
 - **What:** Added Persona D, "Abhinav, the First-Timer Without a System" (section 4D of `01_personas-jtbd-and-prioritisation.md`), from the team's 12 Nov evening discussion. Each trait is checked against the 25 transcripts with an evidence-strength label, plus 4 JTBD statements, a mapping of the solution modules (planner, story discovery, JD fit, mock feedback) to evidence, and a validation plan for the undergrad demographic. Added a TL;DR line recording the team's choice.
 - **Why:** The team picked this persona to build for, given what we can realistically build; it needed grounding in interview signals before going on the Personas slide.
 - **Files:** `01_personas-jtbd-and-prioritisation.md`
+
+## 2026-11-12: Rohith via Claude
+- **What:** Removed "first-time interviewer" as a trait of Persona D. Renamed it "Abhinav, the Placement Candidate Without a System"; removed first-timer wording from the TL;DR, the 4D intro, the Who row (and its ROH-3 / SAM-3 evidence), and the validation plan.
+- **Why:** The team flagged that none of the 25 interviews is a first-time interviewee, so the persona can't claim it.
+- **Files:** `01_personas-jtbd-and-prioritisation.md`
