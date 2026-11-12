@@ -13,6 +13,7 @@
 - **Secondary: Kabir, the Case-Prep Grinder.** ISB case prep that stalls when partners are busy; AI interviewers are too easy; unfamiliar industries break recommendations (10 of 25, all on campus). A real problem, but a crowded one (ChatGPT/Claude voice, Nworks) and the fix (a good case interviewer or peer matching) won't fit in 8–10 hours.
 - **Tertiary: Arjun, the Off-Campus Switcher.** No placement ecosystem, learns by failing real interviews, spends days gathering company intel (6 of 25). The most severe pain per person, but hard to reach this week and needs data we don't have.
 - **Anti-persona: the technical-round grinder** (DSA, system design, GK recall). Already served by LeetCode and upvoted solutions (SAM-3, SAM-2).
+- **Update 12 Nov evening, team decision:** the team chose **D. Abhinav, the First-Timer Without a System** (section 4D) as the persona to build for: a final-year student on his first placement season with sporadic prep, who needs a planner, story discovery, story-to-JD fit and mock feedback. His behaviours and pains are backed by A and B's evidence; his demographic (undergrad, first-timer) is not yet in our sample. See 4D for the 3–5 interviews needed to close that gap.
 - **What runs through all three: nobody gets feedback that points to a specific moment** (15 of 25). Kiran's product delivers that first, so the MVP can later grow into Kabir's and Arjun's jobs.
 
 ---
@@ -100,6 +101,45 @@ A person can sit in two personas. ADD-5 and SRI-3 do cases (B) *and* struggle wi
 | **The job** | Get realistic, company-specific practice before the real interview, so the real one isn't the mock. |
 | **Today** | Claude/ChatGPT loaded with resume + JD (ROH-4, SRI-5); free tiers juggled for limits (SRI-4); LinkedIn posts for recent questions (SRI-5); alumni outreach (ROH-5); notes, or recording interviews against policy (ROH-4, ROH-5). |
 | **Switch / leave** | Switch: company-specific questions in one place (SRI-5: "a one-stop preparation platform"). Leave: generic role questions (SRI-5), lost context on follow-ups (SRI-4). |
+
+### D. Abhinav, the First-Timer Without a System (TEAM-SELECTED, 12 Nov discussion)
+
+> Added after the team discussion on 12 Nov evening, which chose this persona to build for because it fits what we can realistically build. Every trait is checked against the 25 interviews below. **Read the evidence-strength column:** the behaviours and pains are well supported, but the *demographic* (final-year undergrad, first-ever interviews) appears in **none** of our 25 interviews. All 25 have work experience. That part is a hypothesis until we talk to 3–5 undergrads (S1: "Could anyone you interviewed be it?").
+
+> "So my preparation right now is more broad and generic rather than focused." (ADD-2)
+> "When I felt bored, I was switching to GenMan." (ROH-3)
+
+| Element | Detail | Evidence | Strength |
+|---|---|---|---|
+| **Who** | Abhinav, 21–22, final-year student facing his first placement season, on campus and also applying off campus. | No undergrads in sample. Closest: MBA candidates facing case and fit interviews for the first time ("case prep was something very new to me… I have not done it before", ROH-3); SAM-3 recalls "blanking out in an interview… back in college". On + off campus in parallel: SRI-1, SRI-3 hedge across tracks. | **Hypothesis** |
+| **Situation** | Classes, assignments and an active social life fill the day; prep happens in whatever gaps are left. | ~4 h class + 1–2 h submissions a day (ADD-1, ADD-4); "Life in a business school is fast… gym, runs" (SRI-2); case practice "became a socialization thing to just sit" (ADD-1). | Finding (7+) |
+| **Behaviour** | Prep is sporadic: no plan, or a plan he doesn't stick to; jumps between domains; prepares broadly because he doesn't know what to focus on. | ROH-3 switched domains when bored; ADD-2 "broad and generic"; ADD-3 "few days you just don't want to do it"; SRI-1 "I could definitely use better time management"; ADD-5 routine "disrupted"; ADD-2 forgot frameworks after a break. | Finding (T7 + T10, ~9) |
+| **Knowledge gap** | Doesn't know what interviewers ask or what they're really testing. | SAM-5 Googles generic questions; SAM-4 "tanked" by misreading what was assessed; ROH-5 collects 70 alumni questions; SRI-5 hunts LinkedIn for company questions; SAM-2 asked ChatGPT "what kind of stories should I think about". | Finding (~8) |
+| **Story gap** | Hasn't found his stories yet. Can't see which of his experiences matter, or how to tie them to the job. | ROH-2 "people have a very different view of my work"; ROH-1 forgets resume points, picks stale examples; SAM-4 "small small bits and pieces" in every experience; SAM-5 "why this job" narrative "takes some time"; ROH-4 maps projects to each company value; SAM-3 weighs which experience fits the JD. | Finding (T2, 12) |
+| **Delivery gap** | When he does speak, the answer runs long or lacks structure. | T1 (16/25): SUR-1, SAM-4, ADD-1 "you just blabber words", ROH-3 40–60 s answers. | Finding |
+| **Tools today** | ChatGPT/Claude for questions; friends for mocks; YouTube (often abandoned); notes. | ~22/25 use AI; ADD-2 dropped YouTube ("distracted"); ROH-1 mirror and friends. | Finding |
+| **Trigger** | A shortlist, or seeing peers ahead of him. | "Regular practice had definitely helped them up their game and I had fallen behind" (ADD-2); "the fear that comes with the competition" (ADD-1). | Finding |
+| **Switch** | A plan made for him that adapts, plus help digging out stories he didn't know he had. | SRI-1 wants accountability "internally"; ADD-1 wished for someone to say "how to go about in a structured way"; SAM-5 sees value in "consolidating your past experience". | Partial |
+| **Leave** | Nagging; generic answers; the AI writing his story for him. | SRI-1 "it's not nice to have someone nag you"; SAM-1 AI answers "very general"; SUR-1 "I have never said orchestrating in my life". | Finding |
+
+**Jobs (S3 format)**
+- **D-J1 Plan:** **When** placements are weeks away and my week is unpredictable, **I want** a prep plan that fits the time I actually have and adjusts when I miss a day, **so I can** stay consistent without feeling guilty or nagged. (F: a daily plan · E: feel in control, less anxious, SRI-1 · S: don't fall behind peers, ADD-2)
+- **D-J2 Discover stories:** **When** I sit down to prepare "tell me about a time…", **I want to** be prompted to dig up experiences from my past I wouldn't think of, **so I can** build a set of real stories that are mine. (ROH-2, ROH-1, SAM-4, SAM-5)
+- **D-J3 Tie to the job:** **When** I get a shortlist, **I want to** know which of my stories answers what this role and company will test, **so I can** walk in prepared, not generic. (ROH-4, SAM-3, SAM-5, SAM-1)
+- **D-J4 Rehearse with feedback:** **When** I practise an answer, **I want** feedback that points to where it lost the listener, **so I can** fix it before the real interview. (T1, T3: SUR-1, SUR-2, SAM-4, ADD-5)
+
+**How the team's solution maps to the evidence**
+
+| Module (from discussion) | Job | Evidence strength | Watch-out from the interviews |
+|---|---|---|---|
+| Personalised planner + nudges | D-J1 | Medium (T7 7/25, T10 4/25) | Nudge, don't nag (SRI-1). Must re-plan after a missed day, because breaks are when people fall off (ADD-2). |
+| Story-discovery assistant (brainstorm prompts → stories) | D-J2 | **Strong** (T2 12/25) | The AI asks, the user writes. Rewrites get rejected (SUR-1, SUR-2, SUR-3). |
+| Tie stories to JD / role | D-J3 | Strong (T2, T9) | Stay with the user's own facts; don't inflate ownership (SUR-3 "led the entire initiative"). |
+| Mock + feedback on story presentation | D-J4 | **Strong** (T1 16/25, T3 15/25) | Feedback pinned to a moment, not generic (ADD-5, SUR-2). AI mocks "too easy" (SUR-5). |
+
+**Overlap with A–C:** Abhinav is Kiran's story and delivery pains (A) plus Kabir's momentum and focus pains (B), in someone earlier in their career. Persona A's evidence carries over directly; what's new is the *planner*, which rests on the thinnest evidence (consistency and focus, 7–9 of 25) and has the most competition (calendars, Notion, to-do apps).
+
+**To close the gap before the deck:** run 3–5 quick interviews with final-year undergrads (juniors, siblings, campus contacts). Ask about the *last* time they prepared (S2 Mom Test): did they have a plan, did they stick to it, how did they pick their stories? If they don't confirm sporadic prep and a missing story bank, retarget Abhinav to "first-time *MBA* placement candidate". The evidence above already supports that version.
 
 ### Anti-persona: the technical-round grinder
 

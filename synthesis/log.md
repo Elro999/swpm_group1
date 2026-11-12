@@ -12,3 +12,8 @@
 - **What:** Created `synthesis/` with `instructions.md`, `log.md` and `01_personas-jtbd-and-prioritisation.md` (theme matrix across 25 transcripts, 3 merged personas + anti-persona, JTBD, prioritisation scored against the 8–10 h vibe-coding constraint).
 - **Why:** Assignment 2, Personas and JTBD sections; agree on a primary persona before scoping the MVP.
 - **Files:** `instructions.md`, `log.md`, `01_personas-jtbd-and-prioritisation.md`
+
+## 2026-11-12: Rohith via Claude
+- **What:** Added Persona D, "Abhinav, the First-Timer Without a System" (section 4D of `01_personas-jtbd-and-prioritisation.md`), from the team's 12 Nov evening discussion. Each trait is checked against the 25 transcripts with an evidence-strength label, plus 4 JTBD statements, a mapping of the solution modules (planner, story discovery, JD fit, mock feedback) to evidence, and a validation plan for the undergrad demographic. Added a TL;DR line recording the team's choice.
+- **Why:** The team picked this persona to build for, given what we can realistically build; it needed grounding in interview signals before going on the Personas slide.
+- **Files:** `01_personas-jtbd-and-prioritisation.md`
