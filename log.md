@@ -17,3 +17,8 @@
 - **What:** Added `course_material/` (class notes for Sessions 1–7, with its own `instructions.md` and `log.md`). Added it to the folder map in `instructions.md`, with the rule "research is the evidence; course material is the method", and listed it in `README.md`.
 - **Why:** So every agent applies the course's frameworks and PM practitioner insights when building deliverables from the research.
 - **Files:** `course_material/` (9 files), `instructions.md`, `README.md`, `log.md`
+
+## 2026-11-12: Rohith via Claude
+- **What:** Added `synthesis/` (merged personas, JTBD and prioritisation in `01_personas-jtbd-and-prioritisation.md`, plus its `instructions.md` and `log.md`). Added it to the folder map in `instructions.md` and to `README.md`.
+- **Why:** Assignment 2: finalise team personas and JTBD from all 25 interviews, and pick a primary persona that fits our 8–10 h prototype budget.
+- **Files:** `synthesis/` (3 files), `instructions.md`, `README.md`, `log.md`
