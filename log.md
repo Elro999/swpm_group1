@@ -27,3 +27,8 @@
 - **What:** Added `product/` (PRD, capability and architecture doc, build plan, `STATUS.md`, own `instructions.md` and `log.md`). Added it to the folder map in `instructions.md`, noted that source code under `product/app/` is the one exception to "Markdown only", and listed the folder in `README.md`.
 - **Why:** The team wants a working web product for the MVP in the Assignment 2 deck; the plan and a live status file let any agent continue the build.
 - **Files:** `product/` (6 files), `instructions.md`, `README.md`, `log.md`
+
+## 2026-11-14: Suraj via Claude
+- **What:** Added a short "The product: Interview Prep Companion" section to `README.md`: live demo link (https://interview-prep-companion.vercel.app), what was built, its features, how to use it, and the stack. The folder list now sits under "Repo map".
+- **Why:** The user asked for the README to give a quick brief of the working product with a link to the live site.
+- **Files:** `README.md`, `log.md`
