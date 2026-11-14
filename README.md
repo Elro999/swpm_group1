@@ -5,6 +5,7 @@ Shared workspace for our Software Product Management project (ISB). Everything t
 - **`research/`**: 25 masked user interviews and each teammate's personas from Assignment 1. Start with `research/participants.md`.
 - **`course_material/`**: class notes for Sessions 1–7: the frameworks and PM practitioner insights we apply to the research.
 - **`synthesis/`**: team-level analysis built from the research: merged personas, JTBD, which persona to build for.
+- **`product/`**: the MVP build: PRD, architecture, build plan, live `STATUS.md`, and the web app code (`product/app/`). Start with `product/STATUS.md`.
 - **`instructions.md`**: rules for agents (and humans): folder map, order of trust, privacy, logging.
 - **`log.md`**: change log. Every folder has its own `log.md`; entries are append-only.
 

@@ -11,6 +11,7 @@ This repo belongs to **Group 1, Software Product Management (ISB, PGP Co'27, Ter
 | `research/personas/` | 5 files, one per teammate: personas + problem hypotheses + coded quotes | Each teammate's *interpretation* of their 5 interviews |
 | `course_material/` | Class notes, Sessions 1–7 (one file per session) | **The method**: frameworks, templates and PM practitioner rules to apply to the research (JTBD, problem statements, sizing, value proposition, MVP, metrics). Its `instructions.md` maps each session to the deliverable it feeds |
 | `synthesis/` | Team-level analysis built from the research (merged personas, JTBD, prioritisation, …) | Start here for agreed team positions; trace claims back to `research/` |
+| `product/` | The plan (PRD, architecture, build plan), live `STATUS.md`, and the web app code in `product/app/` | Building or continuing the product. **Read `product/STATUS.md` first**: it says where the build stands |
 
 **Research is the evidence; course material is the method.** Before producing any deliverable, read the relevant session(s) in `course_material/` and follow their templates and rules, then ground every claim in `research/`.
 
@@ -34,6 +35,6 @@ Every time you add, change, move or delete anything in this folder, append an en
 - Do not add the original PDFs or audio. If you find anything identifying, mask it and log the fix.
 
 ## Working conventions
-- Markdown only for written content, so every agent can read it.
+- Markdown only for written content, so every agent can read it. The one exception is source code under `product/app/`; specs, READMEs, status and logs about it stay Markdown.
 - Don't rewrite or "clean up" the research files; they are records. Put new analysis in a new folder.
 - Keep file names lowercase-with-hyphens, prefixed with participant/team codes where relevant.
