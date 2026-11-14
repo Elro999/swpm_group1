@@ -116,15 +116,42 @@ describe("withAiCall", () => {
     const repo = createMemoryRepo();
     const meta = { sessionId: "s", purpose: "questions", provider: "mock" };
     const ok = async () => ({ model: "m" });
-    await withAiCall(repo, meta, ok, Date.now, 2);
-    await withAiCall(repo, meta, ok, Date.now, 2);
+    const lim = { session: 2, global: 100 };
+    await withAiCall(repo, meta, ok, Date.now, lim);
+    await withAiCall(repo, meta, ok, Date.now, lim);
     let called = false;
     await expect(
-      withAiCall(repo, meta, async () => { called = true; return { model: "m" }; }, Date.now, 2),
-    ).rejects.toMatchObject({ name: "AiQuotaError", status: 429 });
+      withAiCall(repo, meta, async () => { called = true; return { model: "m" }; }, Date.now, lim),
+    ).rejects.toMatchObject({ name: "AiQuotaError", status: 429, scope: "session" });
     expect(called).toBe(false);
     // Other sessions are unaffected, and calls older than 24 h do not count.
-    await expect(withAiCall(repo, { ...meta, sessionId: "other" }, ok, Date.now, 2)).resolves.toBeTruthy();
-    await expect(withAiCall(repo, meta, ok, () => Date.now() + 86_400_001, 2)).resolves.toBeTruthy();
+    await expect(withAiCall(repo, { ...meta, sessionId: "other" }, ok, Date.now, lim)).resolves.toBeTruthy();
+    await expect(withAiCall(repo, meta, ok, () => Date.now() + 86_400_001, lim)).resolves.toBeTruthy();
+  });
+
+  it("reserves capacity before calling, so concurrent calls cannot overshoot the limit (review fix)", async () => {
+    const repo = createMemoryRepo();
+    const meta = { sessionId: "s", purpose: "questions", provider: "mock" };
+    let calls = 0;
+    const slow = async () => {
+      calls++;
+      await new Promise((r) => setTimeout(r, 5));
+      return { model: "m" };
+    };
+    const results = await Promise.allSettled([1, 2, 3].map(() => withAiCall(repo, meta, slow, Date.now, { session: 1, global: 100 })));
+    expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+    expect(calls).toBe(1);
+  });
+
+  it("enforces a deployment-wide daily cap across sessions (review fix)", async () => {
+    const repo = createMemoryRepo();
+    const ok = async () => ({ model: "m" });
+    const lim = { session: 10, global: 2 };
+    await withAiCall(repo, { sessionId: "a", purpose: "q", provider: "mock" }, ok, Date.now, lim);
+    await withAiCall(repo, { sessionId: "b", purpose: "q", provider: "mock" }, ok, Date.now, lim);
+    await expect(withAiCall(repo, { sessionId: "c", purpose: "q", provider: "mock" }, ok, Date.now, lim)).rejects.toMatchObject({
+      name: "AiQuotaError",
+      scope: "global",
+    });
   });
 });

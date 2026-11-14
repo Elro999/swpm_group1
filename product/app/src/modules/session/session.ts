@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type { AudioStore } from "@/lib/audio";
 import type { Repo, SessionRow } from "@/lib/db/types";
 import { recordEvent } from "@/modules/events/events";
@@ -28,6 +29,15 @@ export async function noteVisit(repo: Repo, session: SessionRow, now: Date = new
   return { ...session, lastSeenAt: now };
 }
 
+/**
+ * Rate-limit key for starting sessions: a salted hash of the client IP (never the raw IP). On Vercel the
+ * first x-forwarded-for entry is set by the platform; locally there is none, so all local starts share a key.
+ */
+export function sessionStartKey(headers: Headers): string {
+  const ip = headers.get("x-forwarded-for")?.split(",")[0]?.trim() || headers.get("x-real-ip")?.trim() || "unknown";
+  return `session_start:${createHash("sha256").update(`ipc-session-start-v1:${ip}`).digest("base64url")}`;
+}
+
 export async function startSession(repo: Repo): Promise<{ session: SessionRow; token: string }> {
   const token = newToken();
   const session = await repo.sessions.create(hashToken(token));
@@ -47,17 +57,25 @@ export async function findSessionByToken(repo: Repo, token: string | undefined |
  * instead of being left with orphaned recordings.
  */
 export async function deleteSession(repo: Repo, sessionId: string, audio?: AudioStore): Promise<{ audioFiles: number }> {
-  const keys: string[] = [];
+  const keys = new Set<string>();
   for (const iv of await repo.interviews.listBySession(sessionId)) {
     for (const q of await repo.questions.listByInterview(iv.id)) {
       for (const a of await repo.attempts.listByQuestion(q.id)) {
-        if (a.answerAudioKey) keys.push(a.answerAudioKey);
-        if (a.followupAudioKey) keys.push(a.followupAudioKey);
+        if (a.answerAudioKey) keys.add(a.answerAudioKey);
+        if (a.followupAudioKey) keys.add(a.followupAudioKey);
       }
     }
   }
-  if (audio && keys.length) await audio.remove(keys);
+  if (audio) {
+    // Also sweep the session's whole storage folder, so a recording whose key was lost from the rows
+    // (e.g. an upload whose database write failed) is still deleted (review fix).
+    // A session cannot exceed this many recordings (80 AI calls a day), so one listing is enough.
+    for (const k of await audio.list({ prefix: `${sessionId}/`, limit: 5000 })) keys.add(k);
+    if (keys.size) await audio.remove([...keys]);
+    // Verify against storage before deleting rows: if anything is left, stop so the user can retry.
+    if ((await audio.list({ prefix: `${sessionId}/`, limit: 1 })).length) throw new Error("Audio delete did not complete");
+  }
   await repo.sessions.delete(sessionId);
-  await recordEvent(repo, null, "data_deleted", { audio_files: keys.length });
-  return { audioFiles: keys.length };
+  await recordEvent(repo, null, "data_deleted", { audio_files: keys.size });
+  return { audioFiles: keys.size };
 }

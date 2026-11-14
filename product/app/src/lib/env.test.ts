@@ -6,8 +6,8 @@ describe("parseEnv", () => {
     const env = parseEnv({});
     expect(env.AI_MODE).toBe("mock");
     expect(env.DATA_MODE).toBe("memory");
-    expect(env.LLM_MODEL_JUDGE).toBe("claude-sonnet-5-5");
-    expect(env.LLM_MODEL_FAST).toBe("claude-haiku-5-5");
+    expect(env.LLM_PROVIDER).toBe("openai");
+    expect(env.LLM_MODEL_JUDGE).toBeUndefined(); // provider defaults live in modules/ai/factory.ts
   });
 
   it("treats empty strings as missing", () => {
@@ -29,8 +29,18 @@ describe("parseEnv", () => {
       parseEnv({ AI_MODE: "live", STT_PROVIDER: "deepgram" });
       throw new Error("expected EnvError");
     } catch (e) {
-      expect((e as EnvError).missing).toEqual(["ANTHROPIC_API_KEY", "DEEPGRAM_API_KEY"]);
+      expect((e as EnvError).missing).toEqual(["OPENAI_API_KEY", "DEEPGRAM_API_KEY"]);
     }
+  });
+
+  it("OpenAI-only live mode needs just one key", () => {
+    try {
+      parseEnv({ AI_MODE: "live" });
+      throw new Error("expected EnvError");
+    } catch (e) {
+      expect((e as EnvError).missing).toEqual(["OPENAI_API_KEY"]);
+    }
+    expect(parseEnv({ AI_MODE: "live", OPENAI_API_KEY: "k" }).LLM_PROVIDER).toBe("openai");
   });
 
   it("never puts secret values in the error message", () => {
@@ -55,7 +65,6 @@ describe("parseEnv", () => {
       DATA_MODE: "supabase",
       SUPABASE_URL: "https://example.supabase.co",
       SUPABASE_SERVICE_ROLE_KEY: "service-role",
-      ANTHROPIC_API_KEY: "a",
       OPENAI_API_KEY: "o",
     });
     expect(env.STT_PROVIDER).toBe("openai");

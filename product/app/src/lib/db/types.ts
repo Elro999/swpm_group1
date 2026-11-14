@@ -34,9 +34,13 @@ export interface AiCallRow {
   inputTokens?: number | null;
   outputTokens?: number | null;
   audioMs?: number | null;
-  status: "ok" | "error";
+  /** "pending" = capacity reserved before the provider call (atomic quota, see modules/ai/log.ts). */
+  status: "pending" | "ok" | "error";
   at: Date;
 }
+
+/** Result of an atomic quota reservation: a row id to complete later, or which limit was hit. */
+export type AiReservation = { id: string } | { denied: "session" | "global" };
 
 // ---------- Phase 1: interviews, competencies, questions ----------
 
@@ -223,9 +227,20 @@ export interface Repo {
     findById(id: string): Promise<AttemptRow | null>;
     listByQuestion(questionId: string): Promise<AttemptRow[]>; // by attemptNo ascending
     update(id: string, patch: AttemptPatch): Promise<AttemptRow>;
+    /**
+     * Exclusive processing lease (review fix): atomically sets processing_until = until if the attempt is
+     * not already leased (or the lease expired before `now`). Returns null when someone else holds it.
+     */
+    claim(id: string, until: Date, now: Date): Promise<AttemptRow | null>;
+    release(id: string): Promise<void>;
+    /** Retention: forget audio keys whose objects were deleted (answer or follow-up). */
+    clearAudioKeys(keys: string[]): Promise<void>;
   };
   feedback: {
-    /** Replaces any previous feedback for the attempt (re-analysis is idempotent). */
+    /**
+     * Replaces any previous feedback for the attempt AND marks the attempt ready, in one transaction
+     * (Supabase: the save_feedback function), so readers never see half-written feedback.
+     */
     save(attemptId: string, metrics: Omit<FeedbackMetricsRow, "attemptId">, points: NewFeedbackPoint[]): Promise<FeedbackPointRow[]>;
     get(attemptId: string): Promise<{ metrics: FeedbackMetricsRow | null; points: FeedbackPointRow[] }>;
     findPoint(pointId: string): Promise<FeedbackPointRow | null>;
@@ -245,6 +260,8 @@ export interface Repo {
     /** Replace all mapping rows for these competencies (one interview's set) in one go. */
     replace(competencyIds: string[], rows: CompetencyMapRow[]): Promise<void>;
     listByCompetencies(competencyIds: string[]): Promise<CompetencyMapRow[]>;
+    /** A story's text changed: every mapping that relied on it becomes a gap until mapping runs again. */
+    invalidateStory(storyId: string): Promise<void>;
   };
   sessions: {
     create(tokenHash: string): Promise<SessionRow>;
@@ -264,5 +281,16 @@ export interface Repo {
   aiCalls: {
     insert(row: AiCallRow): Promise<void>;
     list(filter?: { sessionId?: string }): Promise<AiCallRow[]>;
+    /**
+     * Atomically check the per-session and deployment-wide limits over calls at or after `since`
+     * (pending ones included) and, if both allow it, insert a pending row. Serialised in the database,
+     * so concurrent requests cannot both take the last slot.
+     */
+    reserve(input: { sessionId: string | null; purpose: string; provider: string; sessionLimit: number; globalLimit: number; since: Date }): Promise<AiReservation>;
+    complete(id: string, outcome: Pick<AiCallRow, "model" | "latencyMs" | "inputTokens" | "outputTokens" | "audioMs" | "status">): Promise<void>;
+  };
+  rateLimits: {
+    /** Atomic fixed-window counter: records one hit for `key` and returns false once `max` is exceeded. */
+    hit(key: string, windowMs: number, max: number): Promise<boolean>;
   };
 }

@@ -4,7 +4,7 @@ import { getAudioStore } from "@/lib/audio";
 import { getRepo } from "@/lib/db";
 import type { AttemptRow } from "@/lib/db/types";
 import { json, jsonError } from "@/lib/http";
-import { getLlm, getStt } from "@/modules/ai/factory";
+import { getLlm, getStt, requestDeadline } from "@/modules/ai/factory";
 import { AiQuotaError } from "@/modules/ai/log";
 import { AttemptError, type AttemptDeps } from "./service";
 import { buildAttemptView } from "./view";
@@ -19,7 +19,8 @@ export async function respondWithView(attempt: AttemptRow, status = 200): Promis
 
 /** Production wiring for the attempt pipeline (tests build their own deps). */
 export function getAttemptDeps(): AttemptDeps {
-  return { repo: getRepo(), llm: getLlm(), stt: getStt(), audio: getAudioStore() };
+  const deadline = requestDeadline(); // one budget shared by transcription and the model call in this request
+  return { repo: getRepo(), llm: getLlm(deadline), stt: getStt(deadline), audio: getAudioStore() };
 }
 
 /** Map pipeline errors to HTTP; anything unexpected becomes a generic 500 with no details leaked. */

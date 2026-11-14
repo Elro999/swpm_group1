@@ -78,41 +78,64 @@ export async function startAttempt({ repo }: Pick<AttemptDeps, "repo">, session:
   return attempt;
 }
 
+/**
+ * Exclusive processing (review fix): every step that writes an attempt first takes a short lease in the
+ * database, so two requests (double-click, two tabs, retry while still running) never process the same
+ * attempt at once. The lease outlives the route's 60 s limit, and is released when the step ends.
+ */
+export const LEASE_MS = 75_000;
+const BUSY = "This answer is still being processed. Wait a few seconds, then refresh the page.";
+
+async function withLease<T>(repo: Repo, attemptId: string, fn: (fresh: AttemptRow) => Promise<T>): Promise<T> {
+  const now = Date.now();
+  const fresh = await repo.attempts.claim(attemptId, new Date(now + LEASE_MS), new Date(now));
+  if (!fresh) throw new AttemptError(409, BUSY);
+  try {
+    return await fn(fresh);
+  } finally {
+    await repo.attempts.release(attemptId).catch(() => undefined); // an unreleased lease expires on its own
+  }
+}
+
 export async function submitAnswerAudio(deps: AttemptDeps, session: SessionRow, attemptId: string, bytes: Uint8Array, mime: string): Promise<AttemptRow> {
   if (!session.consentAt) throw new AttemptError(403, "Please agree to the recording notice first.");
   const owned = await requireOwnedAttempt(deps.repo, attemptId, session.id);
-  if (owned.attempt.answerWords) throw new AttemptError(409, "This answer was already recorded. Start a retry to record again.");
   checkAudio(bytes, mime);
-  const key = audioKey(session.id, attemptId, "answer");
-  await deps.audio.put(key, bytes, mime);
-  const attempt = await deps.repo.attempts.update(attemptId, { answerAudioKey: key, answerAudioMime: mime, status: "uploaded", error: null });
-  return advance(deps, session.id, { ...owned, attempt });
+  return withLease(deps.repo, attemptId, async (fresh) => {
+    if (fresh.answerWords) throw new AttemptError(409, "This answer was already recorded. Start a retry to record again.");
+    const key = audioKey(session.id, attemptId, "answer");
+    await deps.audio.put(key, bytes, mime);
+    const attempt = await deps.repo.attempts.update(attemptId, { answerAudioKey: key, answerAudioMime: mime, status: "uploaded", error: null });
+    return advance(deps, session.id, { ...owned, attempt });
+  });
 }
 
 export async function submitFollowupAudio(deps: AttemptDeps, session: SessionRow, attemptId: string, bytes: Uint8Array, mime: string): Promise<AttemptRow> {
   if (!session.consentAt) throw new AttemptError(403, "Please agree to the recording notice first.");
   const owned = await requireOwnedAttempt(deps.repo, attemptId, session.id);
-  const a = owned.attempt;
-  if (!a.followupText || a.followupSkipped || a.followupWords) throw new AttemptError(409, "There is no follow-up waiting for an answer.");
   checkAudio(bytes, mime);
-  const key = audioKey(session.id, attemptId, "followup");
-  await deps.audio.put(key, bytes, mime);
-  const attempt = await deps.repo.attempts.update(attemptId, { followupAudioKey: key, followupAudioMime: mime, status: "followup_uploaded", error: null });
-  return advance(deps, session.id, { ...owned, attempt });
+  return withLease(deps.repo, attemptId, async (a) => {
+    if (!a.followupText || a.followupSkipped || a.followupWords) throw new AttemptError(409, "There is no follow-up waiting for an answer.");
+    const key = audioKey(session.id, attemptId, "followup");
+    await deps.audio.put(key, bytes, mime);
+    const attempt = await deps.repo.attempts.update(attemptId, { followupAudioKey: key, followupAudioMime: mime, status: "followup_uploaded", error: null });
+    return advance(deps, session.id, { ...owned, attempt });
+  });
 }
 
 export async function skipFollowup(deps: AttemptDeps, session: SessionRow, attemptId: string): Promise<AttemptRow> {
   const owned = await requireOwnedAttempt(deps.repo, attemptId, session.id);
-  const a = owned.attempt;
-  if (!a.followupText || a.followupWords || a.followupAudioKey) throw new AttemptError(409, "There is no follow-up to skip.");
-  const attempt = await deps.repo.attempts.update(attemptId, { followupSkipped: true });
-  return advance(deps, session.id, { ...owned, attempt });
+  return withLease(deps.repo, attemptId, async (a) => {
+    if (!a.followupText || a.followupWords || a.followupAudioKey) throw new AttemptError(409, "There is no follow-up to skip.");
+    const attempt = await deps.repo.attempts.update(attemptId, { followupSkipped: true });
+    return advance(deps, session.id, { ...owned, attempt });
+  });
 }
 
 /** Re-run whatever step is missing (used by "Try again" after a failure). */
 export async function resumeAttempt(deps: AttemptDeps, session: SessionRow, attemptId: string): Promise<AttemptRow> {
   const owned = await requireOwnedAttempt(deps.repo, attemptId, session.id);
-  return advance(deps, session.id, owned);
+  return withLease(deps.repo, attemptId, (attempt) => advance(deps, session.id, { ...owned, attempt }));
 }
 
 const FAILURE_MESSAGES = {
@@ -139,10 +162,13 @@ async function advance(deps: AttemptDeps, sessionId: string, owned: OwnedQuestio
         return { ...r, audioMs: r.transcript.durationMs };
       });
       if (!res.transcript.words.length) {
-        // Nothing heard: let the user record again instead of failing forever.
+        // Nothing heard: let the user record again instead of failing forever. Delete the silent recording
+        // BEFORE forgetting its key; if deletion fails, keep the key so session deletion still finds it.
+        const silentKey = a.answerAudioKey!;
+        const removed = await audio.remove([silentKey]).then(() => true, () => false);
         return repo.attempts.update(a.id, {
           status: "failed",
-          answerAudioKey: null,
+          ...(removed ? { answerAudioKey: null, answerAudioMime: null } : {}),
           error: "We couldn't hear anything in that recording. Check your microphone and record again.",
         });
       }
@@ -161,7 +187,7 @@ async function advance(deps: AttemptDeps, sessionId: string, owned: OwnedQuestio
       const res = await withAiCall(repo, { sessionId, purpose: "followup", provider: llm.name }, () =>
         llm.run("followup", { question: question.text, transcript: a.answerText! }),
       );
-      const f = verifyFollowup(a.answerText!, res.data);
+      const f = verifyFollowup(a.answerText!, res.data, question.text);
       a = await repo.attempts.update(a.id, { status: "followup_ready", followupText: f.question, followupQuote: f.quote });
       await recordEvent(repo, sessionId, "followup_shown", { attempt_no: a.attemptNo, fallback: f.fallback });
       return a;
@@ -194,14 +220,15 @@ async function advance(deps: AttemptDeps, sessionId: string, owned: OwnedQuestio
       const res = await withAiCall(repo, { sessionId, purpose: "fit_feedback", provider: llm.name }, () =>
         llm.run("fit_feedback", { question: question.text, competency, transcript: canonical.text, sentences: canonical.sentences.map((s) => s.text) }),
       );
-      const built = buildFeedback(words, durationMs, res.data);
-      await repo.feedback.save(a.id, built.metrics, built.points);
-      a = await repo.attempts.update(a.id, { status: "ready", error: null });
+      const built = buildFeedback(words, durationMs, res.data, { question: question.text, competency });
+      await repo.feedback.save(a.id, built.metrics, built.points); // also marks the attempt ready, in one transaction
+      a = { ...a, status: "ready", error: null };
     }
     return a;
   } catch (err) {
     if (err instanceof AttemptError || err instanceof AiQuotaError) throw err; // quota: nothing failed, just wait
-    console.error("attempt step failed", { stage, name: (err as Error)?.name }); // no user content in logs
+    // No user content in logs; the HTTP status (when the provider gave one) makes live failures diagnosable.
+    console.error("attempt step failed", { stage, name: (err as Error)?.name, status: (err as { status?: unknown })?.status });
     return repo.attempts.update(a.id, { status: "failed", error: FAILURE_MESSAGES[stage] });
   }
 }

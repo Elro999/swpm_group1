@@ -40,3 +40,9 @@ Each POST does at most one transcription + one model call, synchronously (no pol
 `src/app/i/[id]/mock/[qid]/`: `MockLoader` (server: ownership, consent redirect, latest attempt), `MockSession` (client flow), `FeedbackView` (metrics, pinned points with play-from-time, transcript highlights, "Not useful?"). Recorder: `src/components/Recorder.tsx`.
 
 **Tests:** `attempt.test.ts` (happy path, follow-up recorded, consent/ownership/format refusals, retry numbering, view events once, ratings, transcription failure → resume, silence), `compare.test.ts` (directions, decision found/lost, length within target, fixed/still/new matching, summary), `e2e/phase2-mock-feedback.spec.ts`, `e2e/phase3-compare.spec.ts`.
+
+## Review fixes (2026-11-14)
+- **Exclusive processing:** every write step (answer, follow-up, skip, resume) first claims a 75 s lease (`repo.attempts.claim`, column `processing_until`, migration 0004). A second request for the same attempt gets 409 "still being processed" instead of running the model again. Leases are released when the step ends and expire on their own after a crash.
+- **Feedback + "ready" in one transaction:** `repo.feedback.save` replaces points and metrics and marks the attempt ready together (SQL `save_feedback`).
+- **Silent recordings:** when nothing is heard, the recording is deleted before its key is cleared; if deletion fails the key is kept, so "delete my data" still finds it.
+- **Request deadline:** `getAttemptDeps()` gives transcription and the model one shared 45 s budget (see `modules/ai/README.md`).

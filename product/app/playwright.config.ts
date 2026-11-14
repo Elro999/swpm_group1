@@ -23,6 +23,6 @@ export default defineConfig({
     url: `http://localhost:${PORT}/api/health`,
     reuseExistingServer: false,
     timeout: 240_000,
-    env: { AI_MODE: "mock", DATA_MODE: "memory", ADMIN_KEY: "e2e-admin-key-not-secret" },
+    env: { AI_MODE: "mock", DATA_MODE: "memory", ADMIN_KEY: "e2e-admin-key-not-secret", SESSION_STARTS_PER_HOUR: "100000" },
   },
 });

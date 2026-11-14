@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { synthesizeTranscript } from "@/modules/ai/mock/stt";
 import { buildFeedback } from "./build";
-import { looksLikeRewrite, verifyFollowup } from "./guards";
+import { inventsClaims, looksLikeRewrite, verifyFollowup } from "./guards";
 import { computeDelivery, countIWe, TOO_LONG_MS } from "./metrics";
 import { buildCanonical, pinQuote } from "./transcript";
 
@@ -114,5 +114,55 @@ describe("buildFeedback", () => {
   it("ignores an out-of-range decision index from the model", () => {
     const fb = buildFeedback(t.words, t.durationMs, { ...llmOut, decision_sentence_index: 99, points: [] });
     expect(fb.metrics.timeToDecisionMs).toBeNull();
+  });
+});
+
+describe("inventsClaims (G-NO-INVENT for feedback, review fix)", () => {
+  const said = "I helped the team test a small feature.";
+
+  it("rejects invented numbers and a bigger role (the reviewer's probe)", () => {
+    expect(inventsClaims("You personally led 50 engineers and increased revenue by 200%.", said)).toBe(true);
+    expect(inventsClaims("You led the testing work here.", said)).toBe(true);
+    expect(inventsClaims("This shows the work you did at Google.", said)).toBe(true);
+  });
+
+  it("allows grounded feedback, questions about ownership, and 'your own'", () => {
+    expect(inventsClaims("You say you helped the team, but your own action is not clear.", said)).toBe(false);
+    expect(inventsClaims("Which part did you personally lead?", said)).toBe(false);
+    expect(inventsClaims("You identify a feature but not a decision.", said)).toBe(false);
+  });
+
+  it("accepts the feedback the live model produced in the 2026-11-14 smoke test", () => {
+    const answer =
+      "In my last internship I worked on the onboarding flow for a small business lending app. Drop off at the document upload step was around 40%. I interviewed 8 merchants and found most of them did not have scanned documents ready. I proposed letting them save progress and finish later.";
+    const ctx = `${answer}\nTell me about a specific time you owned a product roadmap.\nRoadmap Ownership`;
+    for (const m of [
+      "The example shows feature discovery and delivery, but your ownership of the roadmap is not established. What responsibility did you personally have for setting priorities?",
+      "Your merchant interviews provide concrete evidence behind the proposed solution and show your own action to understand the problem.",
+    ]) {
+      expect(inventsClaims(m, ctx)).toBe(false);
+    }
+  });
+
+  it("buildFeedback drops a fit point whose message invents facts, even with a valid quote", () => {
+    const words = synthesizeTranscript(said).words;
+    const built = buildFeedback(words, 4000, {
+      answered_question: true,
+      competency_shown: false,
+      decision_sentence_index: 0,
+      points: [
+        { check_id: "vague_claim", severity: "fix", quote: "helped the team", message: "You personally led 50 engineers and increased revenue by 200%." },
+        { check_id: "vague_claim", severity: "fix", quote: "helped the team", message: "What did you yourself do when you helped the team?" },
+      ],
+    });
+    const fit = built.points.filter((p) => p.kind === "fit");
+    expect(fit).toHaveLength(1);
+    expect(fit[0].message).toMatch(/^What did you yourself do/);
+    expect(built.dropped).toBe(1);
+  });
+
+  it("falls back to the fixed follow-up when the model's question invents a number", () => {
+    const f = verifyFollowup(said, { question: "You helped 12 people test it. What did you decide?", quote: "helped the team" });
+    expect(f.fallback).toBe(true);
   });
 });

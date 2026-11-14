@@ -148,7 +148,53 @@ describe("failures are recoverable without re-recording", () => {
     expect(r.status).toBe("failed");
     expect(r.error).toMatch(/couldn't hear anything/);
     expect(r.answerAudioKey).toBeNull();
+    // The silent recording itself is deleted, not just forgotten (review fix).
+    expect(await deps.audio.list({ prefix: `${session.id}/`, limit: 10 })).toEqual([]);
     // ...and a new upload to the same attempt is accepted.
     await expect(submitAnswerAudio(deps, session, a.id, AUDIO, WEBM)).resolves.toMatchObject({ status: "failed" });
+  });
+
+  it("silence: if the recording cannot be deleted, its key is kept so deletion can still find it", async () => {
+    const silent: SttProvider = { name: "silent", async transcribe() { return { transcript: { words: [], text: "", durationMs: 1000 }, model: "s" }; } };
+    const { deps, session, questionId } = await setup(silent);
+    const broken = { ...deps, audio: { ...deps.audio, remove: async () => { throw new Error("storage down"); } } };
+    const a = await startAttempt(broken, session, questionId);
+    const r = await submitAnswerAudio(broken, session, a.id, AUDIO, WEBM);
+    expect(r.status).toBe("failed");
+    expect(r.answerAudioKey).not.toBeNull();
+  });
+});
+
+describe("exclusive processing (review fix)", () => {
+  it("two simultaneous resumes: one runs the model, the other gets a 409", async () => {
+    const { deps, session, questionId } = await setup();
+    let modelCalls = 0;
+    const slowLlm = {
+      name: "slow",
+      run: (async (task: never, input: never) => {
+        modelCalls++;
+        await new Promise((r) => setTimeout(r, 10));
+        return deps.llm.run(task, input);
+      }) as typeof deps.llm.run,
+    };
+    const d = { ...deps, llm: slowLlm };
+    const a = await startAttempt(d, session, questionId);
+    await submitAnswerAudio(d, session, a.id, AUDIO, WEBM);
+    await d.repo.attempts.update(a.id, { followupSkipped: true, status: "failed" });
+    modelCalls = 0;
+    const results = await Promise.allSettled([resumeAttempt(d, session, a.id), resumeAttempt(d, session, a.id)]);
+    expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+    const rejected = results.find((r) => r.status === "rejected") as PromiseRejectedResult;
+    expect(rejected.reason).toMatchObject({ name: "AttemptError", status: 409 });
+    expect(modelCalls).toBe(1);
+    // The lease is released afterwards, so a later request works.
+    await expect(resumeAttempt(d, session, a.id)).resolves.toMatchObject({ status: "ready" });
+  });
+
+  it("an expired lease (crashed request) does not block the attempt forever", async () => {
+    const { deps, session, questionId, repo } = await setup();
+    const a = await startAttempt(deps, session, questionId);
+    expect(await repo.attempts.claim(a.id, new Date(Date.now() - 1), new Date(Date.now() - 1000))).not.toBeNull(); // lease already expired
+    await expect(submitAnswerAudio(deps, session, a.id, AUDIO, WEBM)).resolves.toMatchObject({ status: "followup_ready" });
   });
 });

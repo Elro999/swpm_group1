@@ -32,7 +32,9 @@ interface Store {
   stories: Map<string, StoryRow>;
   competencyMap: Map<string, CompetencyMapRow>; // keyed by competencyId
   events: EventRow[];
-  aiCalls: AiCallRow[];
+  aiCalls: (AiCallRow & { id: string })[];
+  leases: Map<string, number>; // attemptId → processing_until (epoch ms)
+  rateLimits: Map<string, { windowStart: number; hits: number }>;
 }
 
 const clone = <T>(v: T): T => structuredClone(v);
@@ -52,6 +54,8 @@ export function createMemoryRepo(): Repo {
     competencyMap: new Map(),
     events: [],
     aiCalls: [],
+    leases: new Map(),
+    rateLimits: new Map(),
   };
 
   function deleteFeedback(attemptId: string) {
@@ -118,6 +122,11 @@ export function createMemoryRepo(): Repo {
       async listByCompetencies(ids) {
         return ids.flatMap((id) => (s.competencyMap.has(id) ? [clone(s.competencyMap.get(id)!)] : []));
       },
+      async invalidateStory(storyId) {
+        for (const [k, m] of s.competencyMap) {
+          if (m.storyId === storyId) s.competencyMap.set(k, { competencyId: k, storyId: null, isGap: true, rationaleQuote: null });
+        }
+      },
     },
     attempts: {
       async create({ questionId, attemptNo }) {
@@ -146,16 +155,38 @@ export function createMemoryRepo(): Repo {
         Object.assign(row, clone(patch));
         return clone(row);
       },
+      async claim(id, until, now) {
+        // No await between the check and the write, so this is atomic within the process.
+        const row = s.attempts.get(id);
+        if (!row) return null;
+        const held = s.leases.get(id);
+        if (held !== undefined && held > now.getTime()) return null;
+        s.leases.set(id, until.getTime());
+        return clone(row);
+      },
+      async release(id) {
+        s.leases.delete(id);
+      },
+      async clearAudioKeys(keys) {
+        const set = new Set(keys);
+        for (const a of s.attempts.values()) {
+          if (a.answerAudioKey && set.has(a.answerAudioKey)) a.answerAudioKey = null;
+          if (a.followupAudioKey && set.has(a.followupAudioKey)) a.followupAudioKey = null;
+        }
+      },
     },
     feedback: {
       async save(attemptId, metrics, points) {
         deleteFeedback(attemptId);
         s.metrics.set(attemptId, { ...clone(metrics), attemptId });
-        return points.map((p) => {
+        const saved = points.map((p) => {
           const row: FeedbackPointRow = { ...clone(p), id: randomUUID(), attemptId };
           s.points.set(row.id, row);
           return clone(row);
         });
+        const attempt = s.attempts.get(attemptId);
+        if (attempt) Object.assign(attempt, { status: "ready", error: null });
+        return saved.sort((a, b) => a.quoteStartMs - b.quoteStartMs);
       },
       async get(attemptId) {
         const metrics = s.metrics.get(attemptId);
@@ -268,7 +299,8 @@ export function createMemoryRepo(): Repo {
           for (const [ck, m] of s.competencyMap) if (m.storyId === k) s.competencyMap.delete(ck); // 0003: cascade
         }
         s.events = s.events.filter((e) => e.sessionId !== id);
-        s.aiCalls = s.aiCalls.filter((c) => c.sessionId !== id);
+        // 0004: ai_calls keep counting toward the deployment-wide cap but are unlinked from the deleted session.
+        for (const c of s.aiCalls) if (c.sessionId === id) c.sessionId = null;
       },
     },
     events: {
@@ -284,10 +316,37 @@ export function createMemoryRepo(): Repo {
     },
     aiCalls: {
       async insert(row) {
-        s.aiCalls.push(clone(row));
+        s.aiCalls.push({ ...clone(row), id: randomUUID() });
       },
       async list(filter = {}) {
-        return s.aiCalls.filter((c) => (filter.sessionId ? c.sessionId === filter.sessionId : true)).map(clone);
+        return s.aiCalls
+          .filter((c) => (filter.sessionId ? c.sessionId === filter.sessionId : true))
+          .map(({ id: _id, ...row }) => {
+            void _id;
+            return clone(row);
+          });
+      },
+      async reserve({ sessionId, purpose, provider, sessionLimit, globalLimit, since }) {
+        // Synchronous check-and-insert: atomic within the process, like the SQL advisory lock.
+        const recent = s.aiCalls.filter((c) => c.at.getTime() >= since.getTime());
+        if (recent.length >= globalLimit) return { denied: "global" };
+        if (sessionId && recent.filter((c) => c.sessionId === sessionId).length >= sessionLimit) return { denied: "session" };
+        const id = randomUUID();
+        s.aiCalls.push({ id, sessionId, purpose, provider, model: "pending", latencyMs: 0, status: "pending", at: new Date() });
+        return { id };
+      },
+      async complete(id, outcome) {
+        const row = s.aiCalls.find((c) => c.id === id);
+        if (row) Object.assign(row, clone(outcome));
+      },
+    },
+    rateLimits: {
+      async hit(key, windowMs, max) {
+        const now = Date.now();
+        const cur = s.rateLimits.get(key);
+        const next = !cur || cur.windowStart <= now - windowMs ? { windowStart: now, hits: 1 } : { ...cur, hits: cur.hits + 1 };
+        s.rateLimits.set(key, next);
+        return next.hits <= max;
       },
     },
   };

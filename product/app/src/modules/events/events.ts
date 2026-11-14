@@ -34,6 +34,8 @@ export const EVENT_NAMES = [
   "bodylang_fakedoor_clicked",
   "data_deleted",
   "error_shown",
+  // operations (server-only, no session)
+  "audio_retention_run",
 ] as const;
 
 export type EventName = (typeof EVENT_NAMES)[number];

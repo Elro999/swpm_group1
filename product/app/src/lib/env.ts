@@ -19,15 +19,22 @@ const schema = z.object({
   AI_MODE: z.preprocess(emptyToUndefined, z.enum(["mock", "live"]).default("mock")),
   DATA_MODE: z.preprocess(emptyToUndefined, z.enum(["memory", "supabase"]).default("memory")),
   STT_PROVIDER: z.preprocess(emptyToUndefined, z.enum(["openai", "deepgram"]).default("openai")),
+  LLM_PROVIDER: z.preprocess(emptyToUndefined, z.enum(["openai", "anthropic"]).default("openai")),
   SUPABASE_URL: optionalString,
   SUPABASE_SERVICE_ROLE_KEY: optionalString,
   ANTHROPIC_API_KEY: optionalString,
   OPENAI_API_KEY: optionalString,
   DEEPGRAM_API_KEY: optionalString,
-  LLM_MODEL_JUDGE: z.preprocess(emptyToUndefined, z.string().default("claude-sonnet-5-5")),
-  LLM_MODEL_FAST: z.preprocess(emptyToUndefined, z.string().default("claude-haiku-5-5")),
+  // Optional overrides; each provider has its own defaults (modules/ai/factory.ts).
+  LLM_MODEL_JUDGE: optionalString,
+  LLM_MODEL_FAST: optionalString,
   ADMIN_KEY: optionalString,
   VERCEL_ENV: optionalString,
+  // Cost and abuse controls (review fix 2026-11-14); defaults live in the modules that use them.
+  AI_GLOBAL_DAILY_LIMIT: z.preprocess(emptyToUndefined, z.coerce.number().int().positive().optional()),
+  SESSION_STARTS_PER_HOUR: z.preprocess(emptyToUndefined, z.coerce.number().int().positive().optional()),
+  // Vercel Cron sends "Authorization: Bearer $CRON_SECRET" to /api/cron/retention. Unset → the route refuses.
+  CRON_SECRET: optionalString,
 });
 
 export type AppEnv = z.infer<typeof schema>;
@@ -61,9 +68,10 @@ export function parseEnv(raw: Record<string, string | undefined>): AppEnv {
     if (!env.SUPABASE_SERVICE_ROLE_KEY) missing.push("SUPABASE_SERVICE_ROLE_KEY");
   }
   if (env.AI_MODE === "live") {
-    if (!env.ANTHROPIC_API_KEY) missing.push("ANTHROPIC_API_KEY");
-    if (env.STT_PROVIDER === "openai" && !env.OPENAI_API_KEY) missing.push("OPENAI_API_KEY");
-    if (env.STT_PROVIDER === "deepgram" && !env.DEEPGRAM_API_KEY) missing.push("DEEPGRAM_API_KEY");
+    const needs = new Set<string>();
+    needs.add(env.LLM_PROVIDER === "anthropic" ? "ANTHROPIC_API_KEY" : "OPENAI_API_KEY");
+    needs.add(env.STT_PROVIDER === "deepgram" ? "DEEPGRAM_API_KEY" : "OPENAI_API_KEY");
+    for (const k of needs) if (!env[k as "OPENAI_API_KEY" | "ANTHROPIC_API_KEY" | "DEEPGRAM_API_KEY"]) missing.push(k);
   }
   if (env.ADMIN_KEY !== undefined && env.ADMIN_KEY.length < 16) {
     problems.push("ADMIN_KEY must be at least 16 characters");

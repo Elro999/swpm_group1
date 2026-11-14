@@ -72,3 +72,37 @@
 - **Findings:** production dependencies have 0 known vulnerabilities; the 7 moderate advisories are dev-only (`minimatch` via the lint toolchain), left as is. Automated accessibility checks pass, but a manual keyboard and screen-reader pass is still needed.
 - **Not done (needs the user):** 2.9 live AI (keys), 7.4 deploy (Supabase + Vercel), 7.5 first-5-user test. Also open: audio retention job, story delete. Nothing committed yet.
 - **Files:** `app/src/modules/ai/{log.ts,ai.test.ts}`, `app/src/modules/{attempt,stories,discovery}/deps.ts`, `app/src/modules/attempt/service.ts`, `app/src/app/api/interviews/route.ts`, `app/src/app/{not-found,error}.tsx`, `app/src/modules/admin/ratelimit{,.test}.ts`, `app/src/app/api/admin/login/route.ts`, `app/e2e/a11y.spec.ts`, `app/package.json`, `app/package-lock.json`, `04_demo-script.md`, `instructions.md`, `STATUS.md`, `log.md`
+
+## 2026-11-14: Suraj via Claude
+- **What:** Live-demo setup. Added OpenAI adapters (`app/src/modules/ai/live/{openai,prompts}.ts`: chat model in JSON mode validated against our contracts with one retry; whisper-1 word timestamps with punctuation re-attached) with fake-fetch tests; `LLM_PROVIDER` in env (live mode needs only `OPENAI_API_KEY`); factory live wiring with defaults `gpt-6.1-sol` / `gpt-6-luna`; `.env.example` updated. Created Supabase project `interview-prep-companion` (id `mljqvqavyizuciyknieu`, ap-south-1, $0/month, confirmed by the user) via the Supabase connector and applied migrations 0001–0003, verified (13 tables, RLS on, no policies, private audio bucket). Created `app/.env.local` (git-ignored) with non-secret values and a locally generated admin key.
+- **Why:** The user asked for a working demo with real AI and Supabase, choosing OpenAI only and a Vercel CLI deploy.
+- **Not done yet:** user adds OPENAI_API_KEY and SUPABASE_SERVICE_ROLE_KEY; live smoke test; Vercel deploy. whisper-1 word timestamps are supported until 26 Feb 2027.
+- **Files:** `app/src/modules/ai/{factory.ts,live/*}`, `app/src/lib/{env.ts,env.test.ts}`, `app/.env.example`, `STATUS.md`, `log.md` (and the remote Supabase project)
+
+## 2026-11-14: Suraj via Claude
+- **What:** Live smoke test against real OpenAI and the new Supabase project (production build on localhost, synthesised speech from macOS `say`). JD → competencies and questions, answer → transcription → follow-up → feedback, and story bank → mapping all worked. Every feedback quote and JD quote was verbatim. Fixed one bug it found: OpenAI rejects audio-only MP4 (what Safari/iOS records) named `.mp4`, so `audio/mp4` is now sent as `.m4a`, with a new unit test. The attempt failure log now includes the provider HTTP status (no user content). `npm run verify` green (142 unit, 23 E2E). Removed an email-bearing org name from STATUS.md.
+- **Why:** The user asked for a working demo with real AI and Supabase.
+- **Not done yet:** Vercel deploy. A few synthetic smoke-test sessions remain in the Supabase database.
+- **Files:** `app/src/modules/ai/live/{openai.ts,openai.test.ts}`, `app/src/modules/attempt/service.ts`, `app/src/modules/ai/README.md`, `STATUS.md`, `log.md`
+
+## 2026-11-14: Suraj via Claude
+- **What:** Deployed to Vercel production at https://interview-prep-companion.vercel.app (project `interview-prep-companion`, Hobby, Vercel CLI from `product/app`; Git auto-connect is not possible because the repo is on another GitHub account). Added the 8 env vars as sensitive production variables, piped from `.env.local` and never printed. Added `app/vercel.json` pinning functions to `bom1` (Mumbai), next to the Supabase database in ap-south-1. Re-ran the live smoke test against the public URL: it passed (questions ~8 s, answer→follow-up ~8 s, feedback ~12 s).
+- **Why:** The user asked for a working, deployed demo.
+- **Notes:** `vercel link` also wrote `.vercel/` and a `VERCEL_OIDC_TOKEN` line into `app/.env.local`; both are git-ignored. To redeploy: `npx vercel deploy --prod` from `product/app`.
+- **Files:** `app/vercel.json`, `STATUS.md`, `log.md` (and the remote Vercel project)
+
+## 2026-11-14: Suraj via Claude
+- **What:** Fixed all 10 findings from two Codex adversarial reviews (the second checked against the actual Assignment 2 deck):
+  1. One shared AI deadline per request (45 s of 60 s), covering retries too (`ai/live/openai.ts`, `ai/factory.ts`).
+  2. Feedback and follow-ups can't state numbers, names or bigger roles the user never said (`feedback/guards.ts` `inventsClaims`).
+  3. Silent recordings are deleted, not just forgotten, and "delete my data" sweeps the session's storage folder (`attempt/service.ts`, `session/session.ts`, `lib/audio.ts` `list`).
+  4. The AI quota is reserved atomically, plus a deployment-wide daily cap and a per-IP limit on new sessions (`ai/log.ts`, `api/session/start`).
+  5. 30-day audio retention runs as a daily Vercel Cron job (`modules/retention`, `api/cron/retention`, `vercel.json`).
+  6. Attempts are processed under an exclusive lease, and feedback plus "ready" are saved in one transaction.
+  7. Pasted stories never lose text.
+  8. Editing a story invalidates its competency mappings, and the hub hides stale evidence.
+
+  New migration `app/supabase/migrations/0004_review_fixes.sql` was applied to the live project. Regression tests cover each finding (161 unit, 23 E2E, all green). Verified live locally and in production, then redeployed. `CRON_SECRET` was added to `.env.local` and to Vercel as a sensitive variable.
+- **Why:** The user asked to "fix all the issues from both reviews".
+- **Not done yet:** Real-microphone checks (Safari/iPhone, Chrome). Setting an OpenAI monthly spend limit (user, in the OpenAI dashboard). Nothing committed.
+- **Files:** `app/src/lib/{audio.ts,env.ts,db/types.ts,db/memory.ts,db/supabase.ts,db/README.md}`, `app/src/modules/{ai,attempt,feedback,session,stories,events,retention}/*`, `app/src/app/api/{session/start,cron/retention}/route.ts`, `app/src/app/i/[id]/InterviewHub.tsx`, `app/supabase/migrations/0004_review_fixes.sql`, `app/vercel.json`, `app/playwright.config.ts`, `app/.env.example`, `STATUS.md`, `log.md`

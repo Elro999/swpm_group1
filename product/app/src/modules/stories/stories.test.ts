@@ -182,3 +182,47 @@ describe("mapStories: every competency gets a story or a gap (SB4, G3)", () => {
     expect(rows.every((r) => r.isGap)).toBe(true);
   });
 });
+
+describe("review fixes: no lost text, no stale evidence", () => {
+  const words = (t: string) => t.replace(/[^\p{L}\p{N}\s]/gu, " ").split(/\s+/).filter(Boolean);
+  const span = (src: string, text: string) => ({ text, start: src.indexOf(text), end: src.indexOf(text) + text.length });
+
+  it("keeps text outside the model's spans as a draft story (the reviewer's 84-of-160 probe)", () => {
+    const src =
+      "First I ran a survey of forty users about onboarding. I decided to cut the signup form to one step. Signups rose by 12%. Later I also mentored two juniors on testing.";
+    const decision = "I decided to cut the signup form to one step.";
+    const { stories } = structureFromModel(src, { stories: [{ situation: span(src, decision), decision: span(src, decision), result: null, sentences: [] }] });
+    const kept = stories.map((s) => s.rawText).join(" ");
+    for (const w of words(src)) expect(kept).toContain(w);
+    expect(stories.some((s) => s.state === "structured" && s.rawText.includes(decision))).toBe(true);
+    expect(stories.filter((s) => s.state === "draft").map((s) => s.rawText)).toEqual([
+      "First I ran a survey of forty users about onboarding.",
+      "Signups rose by 12%. Later I also mentored two juniors on testing.",
+    ]);
+  });
+
+  it("attaches a tiny leftover such as a heading to the next story instead of dropping it", () => {
+    const src = "Story one: I decided to rebuild the pricing page myself. Conversions went up by 9%.";
+    const decision = "I decided to rebuild the pricing page myself.";
+    const { stories } = structureFromModel(src, { stories: [{ situation: span(src, decision), decision: span(src, decision), result: null, sentences: [] }] });
+    const kept = stories.map((s) => s.rawText).join(" ");
+    for (const w of words(src)) expect(kept).toContain(w);
+    const main = stories.find((s) => s.state === "structured")!;
+    expect(main.rawText.startsWith("Story one:")).toBe(true);
+    expect(main.rawText.slice(main.decision!.start, main.decision!.end)).toBe(decision);
+  });
+
+  it("editing a mapped story turns its mappings into gaps until matching runs again", async () => {
+    const repo = createMemoryRepo();
+    const llm = createMockLlm();
+    const sessionId = (await repo.sessions.create("h")).id;
+    const { interview } = await createInterview({ repo, llm }, sessionId, { jd: SAMPLE_JD, cv: null, interviewDate: null });
+    const [story] = await addStories({ repo, llm }, sessionId, "Our checkout lost small merchants. I decided to interview twelve merchants myself and turned insights into requirements. Drop-off fell by 18%.");
+    const before = await mapStories({ repo, llm }, sessionId, interview.id);
+    const ids = before.filter((r) => !r.isGap).map((r) => r.competencyId);
+    expect(ids.length).toBeGreaterThan(0);
+    await updateStory({ repo, llm }, sessionId, story.id, { rawText: "At a hackathon I chose to build a small bot for reminders and it won second place overall." });
+    const after = await repo.competencyMap.listByCompetencies(ids);
+    expect(after.every((r) => r.isGap && r.storyId === null && r.rationaleQuote === null)).toBe(true);
+  });
+});

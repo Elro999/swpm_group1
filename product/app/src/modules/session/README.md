@@ -27,3 +27,7 @@ Token format and uniqueness; only the hash is stored; malformed tokens never rea
 - `deleteSession(repo, id, audio)` removes the recordings first, then every row (cascade), then records an anonymous `data_deleted {audio_files}` (no session id). If audio removal fails, nothing is deleted and the error surfaces so the user can retry. `DELETE /api/session` also clears the cookie. UI: `components/DeleteDataButton.tsx` (two-step confirm) on `/privacy` and each interview hub.
 
 **Tests:** `token.test.ts`, `session.test.ts`, `e2e/smoke.spec.ts`, `e2e/phase1-interview-setup.spec.ts` (consent, resume link).
+
+## Review fixes (2026-11-14)
+- **Delete sweeps storage:** `deleteSession` also deletes everything under the session's storage folder (`audio.list({ prefix })`), not only keys remembered in rows, and checks storage is empty before deleting rows.
+- **Throttled starts:** `POST /api/session/start` allows `SESSION_STARTS_PER_HOUR` (default 60) new sessions per hashed IP (`sessionStartKey`, SQL `hit_rate_limit`), so dropping cookies cannot mint unlimited AI quotas. Raw IPs are never stored.

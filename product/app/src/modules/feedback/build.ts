@@ -1,13 +1,14 @@
 import type { LlmTaskMap } from "@/lib/contracts";
 import type { FeedbackMetricsRow, NewFeedbackPoint, TimedWord } from "@/lib/db/types";
-import { looksLikeRewrite } from "./guards";
+import { inventsClaims, looksLikeRewrite } from "./guards";
 import { computeDelivery, isWeForm, LATE_DECISION_MS, TARGET_MS, TOO_LONG_MS } from "./metrics";
 import { buildCanonical, formatMs, pinQuote, pinSentence, type Pin } from "./transcript";
 
 /**
  * Turns a transcript + the model's judgement into the feedback we store and show.
  * - Delivery checks (late_decision, no_decision, we_not_i, too_long) are generated HERE from timings.
- * - The model may only contribute FIT checks; each must quote the answer verbatim and not read like a rewrite.
+ * - The model may only contribute FIT checks; each must quote the answer verbatim, not read like a rewrite, and
+ *   not state a number, name or bigger role the user never said (inventsClaims; review fix 2026-11-14).
  * - Every stored point has a verbatim quote and a time range (G2). Anything that fails is dropped and counted.
  */
 const MODEL_CHECKS = new Set(["did_not_answer", "competency_not_shown", "vague_claim", "strong_moment"]);
@@ -25,7 +26,12 @@ const point = (checkId: string, kind: NewFeedbackPoint["kind"], severity: NewFee
   checkId, kind, severity, message, quote: pin.quote, quoteStartMs: pin.startMs, quoteEndMs: pin.endMs,
 });
 
-export function buildFeedback(words: TimedWord[], durationMs: number, fit: FitOutput): BuiltFeedback {
+export function buildFeedback(
+  words: TimedWord[],
+  durationMs: number,
+  fit: FitOutput,
+  context: { question?: string; competency?: string } = {},
+): BuiltFeedback {
   const c = buildCanonical(words);
   const points: NewFeedbackPoint[] = [];
   let dropped = 0;
@@ -66,10 +72,11 @@ export function buildFeedback(words: TimedWord[], durationMs: number, fit: FitOu
   }
 
   // --- Fit (model-proposed, verified) ---
+  const allowedSource = [c.text, context.question ?? "", context.competency ?? ""].join("\n");
   let kept = 0;
   for (const p of fit.points) {
     const pin = MODEL_CHECKS.has(p.check_id) ? pinQuote(c, words, p.quote) : null;
-    if (!pin || looksLikeRewrite(p.message, c.text) || kept >= MAX_MODEL_POINTS) {
+    if (!pin || looksLikeRewrite(p.message, c.text) || inventsClaims(p.message, allowedSource) || kept >= MAX_MODEL_POINTS) {
       dropped++;
       continue;
     }

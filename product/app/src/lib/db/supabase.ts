@@ -65,8 +65,8 @@ function storyColumns(p: StoryPatch, current?: StoryRow): Record<string, unknown
  * bypasses RLS. The browser never receives this client or the key.
  * Column names are snake_case (see supabase/migrations/0001_init.sql); this file maps them.
  *
- * Status: written against the migration but NOT yet exercised against a live project
- * (waiting on setup step S1). Verify with a smoke test when the project exists.
+ * Verified against the live project on 2026-11-14 (smoke test in product/log.md). Steps that must be
+ * atomic (quota reservation, rate limits, saving feedback) call SQL functions from migration 0004.
  */
 
 type SessionDb = { id: string; token_hash: string; created_at: string; last_seen_at: string; consent_at: string | null };
@@ -235,6 +235,12 @@ export function createSupabaseRepo(url: string, serviceRoleKey: string): Repo {
           rationaleQuote: (r.rationale_quote as string | null) ?? null,
         }));
       },
+      async invalidateStory(storyId) {
+        check(
+          await db.from("competency_map").update({ story_id: null, is_gap: true, rationale_quote: null }).eq("story_id", storyId),
+          "competencyMap.invalidateStory",
+        );
+      },
     },
     attempts: {
       async create({ questionId, attemptNo }) {
@@ -255,30 +261,47 @@ export function createSupabaseRepo(url: string, serviceRoleKey: string): Repo {
         const data = check(await db.from("attempts").update(row).eq("id", id).select().single(), "attempts.update");
         return toAttempt(data as Db);
       },
+      async claim(id, until, now) {
+        // One UPDATE with the lease condition in its WHERE clause: atomic in Postgres.
+        const data = check(
+          await db
+            .from("attempts")
+            .update({ processing_until: until.toISOString() })
+            .eq("id", id)
+            .or(`processing_until.is.null,processing_until.lt.${now.toISOString()}`)
+            .select()
+            .maybeSingle(),
+          "attempts.claim",
+        );
+        return data ? toAttempt(data as Db) : null;
+      },
+      async release(id) {
+        check(await db.from("attempts").update({ processing_until: null }).eq("id", id), "attempts.release");
+      },
+      async clearAudioKeys(keys) {
+        if (!keys.length) return;
+        check(await db.from("attempts").update({ answer_audio_key: null }).in("answer_audio_key", keys), "attempts.clearAudioKeys(answer)");
+        check(await db.from("attempts").update({ followup_audio_key: null }).in("followup_audio_key", keys), "attempts.clearAudioKeys(followup)");
+      },
     },
     feedback: {
       async save(attemptId, metrics, points) {
-        // Not transactional over the REST API; delete-then-insert is acceptable because re-running analysis is idempotent.
-        check(await db.from("feedback_points").delete().eq("attempt_id", attemptId), "feedback.save(delete points)");
-        check(
-          await db.from("feedback_metrics").upsert({
-            attempt_id: attemptId, time_to_decision_ms: metrics.timeToDecisionMs, i_count: metrics.iCount, we_count: metrics.weCount,
-            duration_ms: metrics.durationMs, answered_question: metrics.answeredQuestion, competency_shown: metrics.competencyShown,
-          }),
-          "feedback.save(metrics)",
-        );
-        if (!points.length) return [];
+        // One transaction (save_feedback in 0004): replace points + metrics and mark the attempt ready.
         const data = check(
-          await db
-            .from("feedback_points")
-            .insert(points.map((p) => ({
-              attempt_id: attemptId, check_id: p.checkId, kind: p.kind, severity: p.severity, message: p.message,
+          await db.rpc("save_feedback", {
+            p_attempt: attemptId,
+            p_metrics: {
+              time_to_decision_ms: metrics.timeToDecisionMs, i_count: metrics.iCount, we_count: metrics.weCount,
+              duration_ms: metrics.durationMs, answered_question: metrics.answeredQuestion, competency_shown: metrics.competencyShown,
+            },
+            p_points: points.map((p) => ({
+              check_id: p.checkId, kind: p.kind, severity: p.severity, message: p.message,
               quote: p.quote, quote_start_ms: p.quoteStartMs, quote_end_ms: p.quoteEndMs,
-            })))
-            .select(),
-          "feedback.save(points)",
+            })),
+          }),
+          "feedback.save",
         );
-        return (data as Db[]).map(toPoint).sort((a, b) => a.quoteStartMs - b.quoteStartMs);
+        return ((data ?? []) as Db[]).map(toPoint).sort((a, b) => a.quoteStartMs - b.quoteStartMs);
       },
       async get(attemptId) {
         const [m, p] = await Promise.all([
@@ -445,8 +468,38 @@ export function createSupabaseRepo(url: string, serviceRoleKey: string): Repo {
           sessionId: r.session_id as string | null, purpose: r.purpose as string, provider: r.provider as string,
           model: r.model as string, latencyMs: r.latency_ms as number, inputTokens: r.input_tokens as number | null,
           outputTokens: r.output_tokens as number | null, audioMs: r.audio_ms as number | null,
-          status: r.status as "ok" | "error", at: new Date(r.at as string),
+          status: r.status as AiCallRow["status"], at: new Date(r.at as string),
         }));
+      },
+      async reserve({ sessionId, purpose, provider, sessionLimit, globalLimit, since }) {
+        const data = check(
+          await db.rpc("reserve_ai_call", {
+            p_session: sessionId, p_purpose: purpose, p_provider: provider,
+            p_session_limit: sessionLimit, p_global_limit: globalLimit, p_since: since.toISOString(),
+          }),
+          "ai_calls.reserve",
+        ) as { id?: number | string; denied?: "session" | "global" };
+        if (data?.denied) return { denied: data.denied };
+        if (data?.id === undefined || data?.id === null) throw new Error("Supabase ai_calls.reserve returned no id");
+        return { id: String(data.id) };
+      },
+      async complete(id, o) {
+        check(
+          await db
+            .from("ai_calls")
+            .update({ model: o.model, latency_ms: o.latencyMs, input_tokens: o.inputTokens ?? null, output_tokens: o.outputTokens ?? null, audio_ms: o.audioMs ?? null, status: o.status })
+            .eq("id", Number(id)),
+          "ai_calls.complete",
+        );
+      },
+    },
+    rateLimits: {
+      async hit(key, windowMs, max) {
+        const allowed = check(
+          await db.rpc("hit_rate_limit", { p_key: key, p_window_seconds: Math.ceil(windowMs / 1000), p_max: max }),
+          "rateLimits.hit",
+        );
+        return allowed === true;
       },
     },
   };

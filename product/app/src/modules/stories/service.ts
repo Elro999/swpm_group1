@@ -59,7 +59,11 @@ export async function updateStory(deps: Deps, sessionId: string, id: string, cha
     const next: StructuredStory = best
       ? { ...best, rawText: clean, ...rebaseInto(clean, best) }
       : structureFromModel(clean, { stories: [] }).stories[0];
-    return deps.repo.stories.update(id, { ...next, state: next.state === "draft" ? "draft" : "structured" });
+    const updated = await deps.repo.stories.update(id, { ...next, state: next.state === "draft" ? "draft" : "structured" });
+    // The old text was the evidence for any competency mapped to this story: those mappings become gaps
+    // until the user runs matching again, so the hub never shows a "why it fits" quote that is gone (review fix).
+    if (clean !== story.rawText) await deps.repo.competencyMap.invalidateStory(id);
+    return updated;
   }
 
   if (change.ready !== undefined) {

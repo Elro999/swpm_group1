@@ -25,3 +25,7 @@
 Migration `0003_competency_map_cascade.sql` fixes a latent conflict in 0001 (`ON DELETE SET NULL` vs the "story or gap" check): deleting a story now deletes its mapping rows.
 
 **Tests:** `stories.test.ts` (guard, verbatim spans and repairs, flags, draft fallback, add/ready/edit, ownership, mapping with gaps and rejected inventions), `e2e/phase4-stories.spec.ts`.
+
+## Review fixes (2026-11-14)
+- **Lossless pasting:** text outside every verified story is kept as a draft story; a leftover of fewer than 3 words (a heading) joins the next story (or the previous one at the end). The union of saved stories always contains every word pasted.
+- **Edits invalidate evidence:** changing a story's text turns every competency mapped to it into a gap (`competencyMap.invalidateStory`) until matching runs again. The interview hub also hides any mapping whose "why it fits" quote is no longer in the story.

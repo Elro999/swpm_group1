@@ -31,3 +31,6 @@ Ownership for attempts, feedback and ratings is checked in `modules/attempt/serv
 
 ## Status
 `memory.ts` is tested. `supabase.ts` and the migration are **written but not yet run against a real project** (waiting on setup S1; no local Postgres on the build machine). First task after S1: apply the migration, run the app with `DATA_MODE=supabase`, and smoke-test session start and resume.
+
+## Review fixes (2026-11-14)
+Migration `0004_review_fixes.sql` (applied to the live project 2026-11-14) adds: `reserve_ai_call` (atomic quota), `hit_rate_limit` + `rate_limits`, `attempts.processing_until` (lease), `save_feedback` (transactional), `audio_object_names` (storage listing for sweeps and retention); `ai_calls.session_id` is now `on delete set null`. All functions are executable by `service_role` only. New repo methods: `attempts.claim/release/clearAudioKeys`, `aiCalls.reserve/complete`, `rateLimits.hit`, `competencyMap.invalidateStory`; `AudioStore.list`.

@@ -73,6 +73,18 @@ describe("deleteSession (6.3: delete my data)", () => {
     await expect(deleteSession(repo, session.id, broken)).rejects.toThrow("storage down");
     expect(await findSessionByToken(repo, token)).not.toBeNull();
   });
+
+  it("also deletes recordings no row points to, by sweeping the session's storage folder (review fix)", async () => {
+    const repo = createMemoryRepo();
+    const { session } = await startSession(repo);
+    const audio = createMemoryAudioStore();
+    await audio.put(`${session.id}/orphan-attempt/answer`, new Uint8Array([1]), "audio/webm");
+    await audio.put("someone-else/x/answer", new Uint8Array([1]), "audio/webm");
+    const { audioFiles } = await deleteSession(repo, session.id, audio);
+    expect(audioFiles).toBe(1);
+    expect(await audio.list({ prefix: `${session.id}/`, limit: 10 })).toEqual([]);
+    expect(await audio.get("someone-else/x/answer")).not.toBeNull();
+  });
 });
 
 describe("session service", () => {

@@ -17,9 +17,14 @@
 - `mock/stt.ts`: ignores audio and returns a **synthetic** answer with realistic timings. Attempt 1 has the two most common defects from the research (decision late, "we" not "I"); attempt 2+ is improved, so before vs after has something to show.
 
 ## Not yet done
-Live adapters (Anthropic for the LLM; OpenAI Whisper or Deepgram for STT) in task 2.9, waiting on the provider decision and keys (PRD Q1). When writing them:
+Live adapters: **done (2026-11-14), OpenAI only**: `live/openai.ts` (chat JSON mode + Zod validation with one retry; whisper-1 word timestamps, punctuation re-attached; `audio/mp4` sent as `.m4a` because OpenAI rejects it as `.mp4`) and `live/prompts.ts`. Verified live end to end. Anthropic/Deepgram stay unimplemented and fail fast. Rules the adapters follow:
 - load the `claude-api` skill, use structured output / tool-use for the schema, and retry once on schema failure;
 - confirm the STT model returns **word-level** timestamps, and **align punctuation from the full text onto the words** (Whisper's word list has none; `modules/feedback` splits sentences on punctuation);
 - `fit_feedback` is **judgement only**: delivery checks (late decision, I vs we, length) are computed in code and any the model returns are dropped (see `modules/feedback/README.md`). The mock already behaves this way.
 
 **Tests:** `ai.test.ts`.
+
+## Cost and time limits (review fixes, 2026-11-14)
+- **Quota is reserved atomically** before the provider is called (`repo.aiCalls.reserve` → SQL `reserve_ai_call`, migration 0004): 80 calls per session per 24 h **and** a deployment-wide cap (`AI_GLOBAL_DAILY_LIMIT`, default 1500). Concurrent requests cannot overshoot; `AiQuotaError.scope` says which limit was hit. Calls stay counted (unlinked) after a user deletes their data.
+- **One deadline per request**: `getLlm(deadline)` / `getStt(deadline)` share `requestDeadline()` (45 s of the route's 60 s). Every call and the corrective retry use what is left; a call with under 4 s left is not started (`AiDeadlineError`), so the route always has time to save a "failed, try again" state.
+

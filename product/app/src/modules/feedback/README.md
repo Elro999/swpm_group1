@@ -23,3 +23,6 @@ Model-proposed delivery checks are **dropped** (the model may not own them). Eve
 Sentence splitting needs **punctuation on the words**. Whisper's word list has none (it is only in the full `text`), so the adapter must align punctuation from `text` onto the words. Without it, the chunking fallback still works but pins are coarser.
 
 **Tests:** `feedback.test.ts` (pinning, refusing invented quotes, I/we counting, decision timing, rewrite guard, follow-up fallback, dropping model-owned delivery checks, too-long, out-of-range decision index).
+
+## Review fixes (2026-11-14)
+- **No invented facts in model text:** fit messages and the follow-up question pass `inventsClaims` (guards.ts, built on `findInventions`): no number or name the user never said, and no ownership claim ("you led…") in a statement. Questions may ask about ownership; "your own" is fine. Failing points are dropped; a failing follow-up falls back to the fixed decision probe.

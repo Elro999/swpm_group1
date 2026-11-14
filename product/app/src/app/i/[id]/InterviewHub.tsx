@@ -36,8 +36,18 @@ export async function InterviewHub({ params }: { params: Promise<{ id: string }>
     repo.stories.listBySession(session.id),
   ]);
   const labelOf = new Map(competencies.map((c) => [c.id, c.label]));
-  const mapping = new Map((await repo.competencyMap.listByCompetencies(competencies.map((c) => c.id))).map((m) => [m.competencyId, m]));
   const storyById = new Map(stories.map((s) => [s.id, s]));
+  // Never show coverage whose evidence is no longer in the story (e.g. edited before invalidation): such a row
+  // is treated as "not matched yet" until mapping runs again (review fix).
+  const mapping = new Map(
+    (await repo.competencyMap.listByCompetencies(competencies.map((c) => c.id)))
+      .filter((m) => {
+        if (m.isGap) return true;
+        const st = m.storyId ? storyById.get(m.storyId) : undefined;
+        return Boolean(st && (!m.rationaleQuote || st.rawText.includes(m.rationaleQuote)));
+      })
+      .map((m) => [m.competencyId, m]),
+  );
   const gaps = competencies.filter((c) => mapping.get(c.id)?.isGap).length;
   const when = describeInterviewDate(interview.interviewDate);
 
