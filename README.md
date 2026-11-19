@@ -26,6 +26,10 @@ A web app that helps students practise fit and behavioural interview answers out
 
 Built with Next.js, OpenAI (language model and Whisper speech-to-text) and Supabase, hosted on Vercel. To run it locally or contribute, see [`product/STATUS.md`](product/STATUS.md) and [`product/app/`](product/app/).
 
+**Further reading**
+- [How the feedback engine works](product/05_feedback-engine-explained.md): plain-language guide to what the AI looks at, and when.
+- [Product + engineering context](product/06_product-engineering-context.md): features, design language and architecture in one file; attach it to coding prompts so changes stay consistent.
+
 ## Repo map
 
 - **`research/`**: 25 masked user interviews and each teammate's personas from Assignment 1. Start with `research/participants.md`.

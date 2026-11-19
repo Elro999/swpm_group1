@@ -32,3 +32,8 @@
 - **What:** Added a short "The product: Interview Prep Companion" section to `README.md`: live demo link (https://interview-prep-companion.vercel.app), what was built, its features, how to use it, and the stack. The folder list now sits under "Repo map".
 - **Why:** The user asked for the README to give a quick brief of the working product with a link to the live site.
 - **Files:** `README.md`, `log.md`
+
+## 2026-11-19: Suraj via Claude
+- **What:** Added links in `README.md` to two new product docs: `product/05_feedback-engine-explained.md` and `product/06_product-engineering-context.md`.
+- **Why:** So teammates and stakeholders can find the feedback-engine explainer and the shared context file.
+- **Files:** `README.md`, `log.md`, `product/` (see `product/log.md`)

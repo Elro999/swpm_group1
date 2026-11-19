@@ -106,3 +106,8 @@
 - **Why:** The user asked to "fix all the issues from both reviews".
 - **Not done yet:** Real-microphone checks (Safari/iPhone, Chrome). Setting an OpenAI monthly spend limit (user, in the OpenAI dashboard). Nothing committed.
 - **Files:** `app/src/lib/{audio.ts,env.ts,db/types.ts,db/memory.ts,db/supabase.ts,db/README.md}`, `app/src/modules/{ai,attempt,feedback,session,stories,events,retention}/*`, `app/src/app/api/{session/start,cron/retention}/route.ts`, `app/src/app/i/[id]/InterviewHub.tsx`, `app/supabase/migrations/0004_review_fixes.sql`, `app/vercel.json`, `app/playwright.config.ts`, `app/.env.example`, `STATUS.md`, `log.md`
+
+## 2026-11-19: Suraj via Claude
+- **What:** Added `05_feedback-engine-explained.md`, a plain-language guide for non-technical readers. It covers what each AI step sees (practice feedback uses only the question, the competency and the transcript; the CV is used only for gap prompts; stories only for structuring and matching), what code measures versus what the AI judges, how data enters each request (fixed rules, the task, user data in `<data>`, no memory or history), when each request happens, and the checks after. Added `06_product-engineering-context.md`, a one-file summary of principles, goals, current feature status, design language, architecture, security rules and the definition of done, made to attach to coding prompts. Linked both from `instructions.md` and the root `README.md`.
+- **Why:** The user asked for a stakeholder explainer of the feedback engine and a shared context file for consistent AI-assisted coding.
+- **Files:** `05_feedback-engine-explained.md`, `06_product-engineering-context.md`, `instructions.md`, `log.md`, `../README.md`

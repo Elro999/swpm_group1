@@ -10,6 +10,8 @@ The plan and (from Phase 0 onward) the code for **MVP1 of the Interview Prep Com
 | `02_capability-and-architecture.md` | How: constraints, feasibility, stack, data model, state machines, API index, AI guardrails, events, security, tests | Before touching code structure, data, AI or privacy |
 | `03_build-plan.md` | Ordered phases and tasks with "done when", setup steps for the user, effort and cut order, agent protocol | To pick the next task |
 | `04_demo-script.md` | Six-minute demo walk-through mapped to the deck's requirement IDs, runnable with no keys | Before a demo or user test |
+| `05_feedback-engine-explained.md` | Plain-language guide for non-technical readers: what the AI sees (JD, answer, stories, CV, its own knowledge), how data enters each request, when, and the checks after | Before explaining the product to faculty, users or teammates |
+| `06_product-engineering-context.md` | One-file summary of current features, design language and architecture, made to upload with coding prompts | Attach to any AI coding or design prompt; keep it current when features change |
 | `app/` | The Next.js application (created in Phase 0). Each module under `app/src/modules/<name>/` has its own `README.md`: intended behaviour, inputs/outputs, invariants, tests | When working on that module |
 | `log.md` | Append-only history of every change | To see what happened and why |
 
