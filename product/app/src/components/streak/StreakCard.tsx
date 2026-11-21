@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { ui } from "@/components/ui";
 import { addDays, type DayState, type StreakSummary } from "@/modules/streak/streak";
-import { CheckIcon, FlameIcon, MoonIcon } from "./StreakIcons";
+import { MilestoneTrack } from "./MilestoneTrack";
+import { BriefcaseIcon, CheckIcon, FlameIcon, MoonIcon } from "./StreakIcons";
 import { useStreak } from "./useStreak";
 
 /**
  * Prep streak card on the interview hub: the run, the interview countdown, this week's days (with the rest
- * day), the revive offer when a streak broke, and today's next step from the prep list. Calm copy, no guilt.
+ * day), this interview as a milestone, the revive offer when a streak broke, and today's next step from the prep
+ * list. Calm copy, no guilt.
  */
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 const REP_HINT = "Practice reps: get feedback on an answer, mark a story ready, or fill a gap.";
@@ -17,6 +19,7 @@ const DAY_STYLE: Record<DayState, string> = {
   active: "bg-indigo-600 text-white",
   revived: "border-2 border-indigo-400 text-indigo-700 dark:border-indigo-500 dark:text-indigo-300",
   rest: "border border-dashed border-zinc-400 text-zinc-500 dark:border-zinc-600 dark:text-zinc-400",
+  interview: "border-2 border-indigo-600 text-indigo-700 dark:border-indigo-400 dark:text-indigo-300",
   today: "border-2 border-indigo-600 text-indigo-700 dark:border-indigo-400 dark:text-indigo-300",
   missed: "bg-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400",
   future: "bg-zinc-100 dark:bg-zinc-900",
@@ -26,6 +29,7 @@ const DAY_TEXT: Record<DayState, string> = {
   active: "prep done",
   revived: "revived",
   rest: "rest day",
+  interview: "interview day, never breaks the streak",
   today: "today, nothing yet",
   missed: "missed",
   future: "coming up",
@@ -71,12 +75,21 @@ function message(s: StreakSummary): string {
   }
 }
 
-export function StreakCard({ nextStep }: { nextStep?: { title: string; href: string; minutes: number } | null }) {
+export function StreakCard({
+  nextStep,
+  interviewId,
+}: {
+  nextStep?: { title: string; href: string; minutes: number } | null;
+  /** The hub's interview: its date is shown as the milestone. */
+  interviewId?: string;
+}) {
   const { streak: s } = useStreak();
   if (!s) return null;
 
+  const milestone = s.milestones.find((m) => m.interviewId === interviewId) ?? null;
+  const toGo = milestone ? (milestone.status === "done" ? null : milestone.daysToGo) : s.daysToInterview;
   const facts = [
-    s.daysToInterview === 0 ? "Interview today" : s.daysToInterview !== null ? `${plural(s.daysToInterview, "day")} to your interview` : null,
+    toGo === 0 ? "Interview today" : toGo !== null ? `${plural(toGo, "day")} to your interview` : null,
     s.best > s.current ? `best run ${plural(s.best, "day")}` : null,
   ].filter(Boolean);
   const reviveOn = s.status === "revivable" || s.status === "reviving";
@@ -102,16 +115,24 @@ export function StreakCard({ nextStep }: { nextStep?: { title: string; href: str
       <ol className="grid grid-cols-7 gap-1" aria-label="This week">
         {s.week.map((d) => (
           <li key={d.date} className="flex flex-col items-center gap-1 text-xs text-zinc-600 dark:text-zinc-400">
-            <span className={`flex h-9 w-9 items-center justify-center rounded-full ${DAY_STYLE[d.state]}`} aria-hidden="true">
+            <span className={`flex h-9 w-9 items-center justify-center rounded-full ${DAY_STYLE[d.interview && (d.state === "future" || d.state === "today") ? "interview" : d.state]}`} aria-hidden="true">
               {(d.state === "active" || d.state === "revived") && <CheckIcon />}
               {d.state === "rest" && <MoonIcon />}
-              {d.state === "today" && <FlameIcon />}
+              {d.state === "today" && !d.interview && <FlameIcon />}
+              {d.interview && d.state !== "active" && <BriefcaseIcon />}
             </span>
-            <span className={d.date === s.today ? "font-semibold text-indigo-700 dark:text-indigo-300" : ""}>{d.date === s.today ? "Today" : d.label}</span>
-            <span className="sr-only">{DAY_TEXT[d.state]}</span>
+            <span className={d.date === s.today ? "font-semibold text-indigo-700 dark:text-indigo-300" : d.interview ? "font-medium text-indigo-700 dark:text-indigo-300" : ""}>
+              {d.date === s.today ? "Today" : d.interview ? "Interview" : d.label}
+            </span>
+            <span className="sr-only">
+              {d.label}: {DAY_TEXT[d.state]}
+              {d.interview && d.state !== "interview" ? ", interview day" : ""}
+            </span>
           </li>
         ))}
       </ol>
+
+      {milestone && <MilestoneTrack milestone={milestone} />}
 
       <div className={reviveOn ? "rounded-lg bg-indigo-50 p-3 text-sm text-indigo-900 dark:bg-indigo-950 dark:text-indigo-100" : "text-sm"} data-testid="streak-message">
         <p>{message(s)}</p>

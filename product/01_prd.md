@@ -76,6 +76,7 @@ Why: S5 "Products that stick" (habit, Duolingo streak); "once you lose touch, it
 - US-6.1 (ST1) As Abhinav, I want any prep action on a day (adding a JD, a story, recording, feedback, marking a story ready) to keep my streak going, so that consistency, not only big sessions, is visible.
 - US-6.2 (ST2) As Abhinav, I want one missed day a week forgiven automatically, so that a case-heavy day does not cost me the streak.
 - US-6.3 (ST3) As Abhinav, if I miss more days (up to 3), I want to revive my streak by doing one practice rep per lost day (feedback on an answer, a story marked ready, or a gap filled) by the end of the day after I come back, so that extra prep makes up for the lost days.
+- US-6.4 (ST4) As Abhinav, I want my interview date to be a milestone in the streak (the days I prepped on the way to it, the interview day marked, and how many days I prepped once it has passed), and I want the interview day itself never to break my streak.
 - Acceptance: days follow the user's own timezone; automatic page views do not count; the streak is derived from server-side events (nothing stored, nothing the browser can fake); no notifications. Rules and constants: `app/src/modules/streak/README.md`.
 
 ### Platform / operators

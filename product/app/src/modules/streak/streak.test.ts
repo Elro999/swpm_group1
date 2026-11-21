@@ -4,8 +4,10 @@ import { computeStreak, localDay, MAX_REVIVE_DAYS, safeTimeZone, weekOf } from "
 // Week of Mon 16 Nov 2026 to Sun 22 Nov 2026. Times are India time unless stated.
 const at = (day: string, time = "10:00") => new Date(`${day}T${time}:00+05:30`);
 const ev = (name: string, day: string, time?: string) => ({ name, at: at(day, time), props: {} });
-const run = (events: ReturnType<typeof ev>[], today: string, extra: { interviewDates?: string[]; timeZone?: string; time?: string } = {}) =>
-  computeStreak({ events, now: at(today, extra.time ?? "12:00"), timeZone: extra.timeZone ?? "Asia/Kolkata", interviewDates: extra.interviewDates });
+type Iv = { id: string; date: string | null; addedAt: Date };
+const iv = (id: string, date: string | null, addedDay: string): Iv => ({ id, date, addedAt: at(addedDay) });
+const run = (events: ReturnType<typeof ev>[], today: string, extra: { interviews?: Iv[]; timeZone?: string; time?: string } = {}) =>
+  computeStreak({ events, now: at(today, extra.time ?? "12:00"), timeZone: extra.timeZone ?? "Asia/Kolkata", interviews: extra.interviews });
 
 describe("computeStreak", () => {
   it("is empty before any prep", () => {
@@ -124,8 +126,59 @@ describe("computeStreak", () => {
   });
 
   it("counts down to the nearest interview that has not passed", () => {
-    const s = run([ev("interview_added", "2026-11-21")], "2026-11-21", { interviewDates: ["2026-11-10", "2026-11-27", "2026-12-05"] });
+    const s = run([ev("interview_added", "2026-11-21")], "2026-11-21", {
+      interviews: [iv("a", "2026-11-10", "2026-11-01"), iv("b", "2026-11-27", "2026-11-21"), iv("c", "2026-12-05", "2026-11-21"), iv("d", null, "2026-11-21")],
+    });
     expect(s.daysToInterview).toBe(6);
-    expect(run([], "2026-11-21", { interviewDates: [] }).daysToInterview).toBeNull();
+    expect(s.milestones.map((m) => m.interviewId)).toEqual(["a", "b", "c"]); // no date, no milestone
+    expect(run([], "2026-11-21", { interviews: [] }).daysToInterview).toBeNull();
+  });
+});
+
+describe("interview milestones", () => {
+  it("shows the road to an upcoming interview", () => {
+    const events = [ev("interview_added", "2026-11-18"), ev("story_added", "2026-11-19"), ev("feedback_viewed", "2026-11-21")];
+    const s = run(events, "2026-11-21", { interviews: [iv("x", "2026-11-27", "2026-11-18")] });
+    expect(s.milestones[0]).toMatchObject({ status: "upcoming", daysToGo: 6, addedOn: "2026-11-18", windowDays: 9, elapsedDays: 4, preppedDays: 3 });
+    const track = s.milestones[0].track;
+    expect(track).toHaveLength(9); // 18th to 26th: the road ends the day before the interview
+    expect(track.slice(0, 4).map((d) => d.state)).toEqual(["prepped", "prepped", "missed", "prepped"]);
+    expect(track.at(-1)).toEqual({ date: "2026-11-26", state: "future" });
+    expect(s.week.find((d) => d.date === "2026-11-27")).toBeUndefined(); // next week
+  });
+
+  it("does not count today against the road until the day is over", () => {
+    const s = run([ev("interview_added", "2026-11-20")], "2026-11-21", { interviews: [iv("x", "2026-11-25", "2026-11-20")] });
+    expect(s.milestones[0]).toMatchObject({ elapsedDays: 1, preppedDays: 1 });
+    expect(s.milestones[0].track[1]).toEqual({ date: "2026-11-21", state: "today" });
+  });
+
+  it("never breaks the streak on the interview day, and keeps the weekly rest day", () => {
+    const events = [ev("story_added", "2026-11-16"), ev("story_added", "2026-11-17"), ev("story_added", "2026-11-19"), ev("story_added", "2026-11-21")];
+    // Wed 18 is the interview (no prep); Fri 20 missed and uses the rest day.
+    const s = run(events, "2026-11-21", { interviews: [iv("x", "2026-11-18", "2026-11-16")] });
+    expect(s.status).toBe("active_today");
+    expect(s.current).toBe(4);
+    expect(s.week.find((d) => d.date === "2026-11-18")).toMatchObject({ state: "interview", interview: true });
+    expect(s.week.find((d) => d.date === "2026-11-20")?.state).toBe("rest");
+  });
+
+  it("marks the interview day in the week strip before it comes", () => {
+    const s = run([ev("interview_added", "2026-11-17")], "2026-11-17", { interviews: [iv("x", "2026-11-20", "2026-11-17")] });
+    expect(s.week.find((d) => d.date === "2026-11-20")).toMatchObject({ state: "future", interview: true });
+  });
+
+  it("reports the result once the interview has passed", () => {
+    const events = [ev("interview_added", "2026-11-16"), ev("story_added", "2026-11-17"), ev("feedback_viewed", "2026-11-19")];
+    const s = run(events, "2026-11-21", { interviews: [iv("x", "2026-11-20", "2026-11-16")] });
+    expect(s.milestones[0]).toMatchObject({ status: "done", daysToGo: 0, windowDays: 4, elapsedDays: 4, preppedDays: 3 });
+    const today = run(events, "2026-11-20", { interviews: [iv("x", "2026-11-20", "2026-11-16")] });
+    expect(today.milestones[0].status).toBe("today");
+    expect(today.daysToInterview).toBe(0);
+  });
+
+  it("has an empty road for an interview added on or after its date", () => {
+    const s = run([ev("interview_added", "2026-11-21")], "2026-11-21", { interviews: [iv("x", "2026-11-19", "2026-11-21")] });
+    expect(s.milestones[0]).toMatchObject({ status: "done", windowDays: 0, elapsedDays: 0, preppedDays: 0, track: [] });
   });
 });

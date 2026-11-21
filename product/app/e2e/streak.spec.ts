@@ -47,3 +47,21 @@ test("a new visitor sees no streak chip", async ({ browser }) => {
   await expect(page.getByRole("link", { name: "My stories" })).toBeVisible();
   await expect(page.getByTestId("streak-chip")).toHaveCount(0);
 });
+
+test("the interview date is a milestone on the streak card", async ({ page }) => {
+  const inDays = (n: number) => new Date(Date.now() + n * 86_400_000).toLocaleDateString("en-CA");
+  await page.goto("/");
+  await page.getByRole("button", { name: "Try with a sample JD" }).click();
+  await page.getByLabel(/Interview date/).fill(inDays(5));
+  await page.getByRole("button", { name: "Create my questions" }).click();
+  await expect(page).toHaveURL(/\/i\/[0-9a-f-]{36}$/);
+
+  const card = page.getByTestId("streak-card");
+  await expect(card).toContainText("5 days to your interview");
+  const milestone = card.getByTestId("streak-milestone");
+  await expect(milestone).toHaveAttribute("data-status", "upcoming");
+  await expect(milestone.getByTestId("streak-milestone-summary")).toHaveText("Prepped 1 of 1 day so far · 5 days to go.");
+  // One dot per day from today to the day before the interview, then the interview itself.
+  await expect(milestone.getByRole("list").getByRole("listitem")).toHaveCount(6);
+  await expect(milestone.getByRole("listitem").last()).toHaveText("Interview");
+});

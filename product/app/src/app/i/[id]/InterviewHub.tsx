@@ -78,7 +78,7 @@ export async function InterviewHub({ params }: { params: Promise<{ id: string }>
         {when && <p className={ui.muted}>{when}</p>}
       </div>
 
-      <StreakCard nextStep={prep.items[0] ? { title: prep.items[0].title, href: prep.items[0].href, minutes: prep.items[0].minutes } : null} />
+      <StreakCard interviewId={interview.id} nextStep={prep.items[0] ? { title: prep.items[0].title, href: prep.items[0].href, minutes: prep.items[0].minutes } : null} />
 
       <section aria-labelledby="questions-title" className="flex flex-col gap-4">
         <h2 id="questions-title" className={ui.h2}>

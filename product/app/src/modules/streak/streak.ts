@@ -14,6 +14,9 @@ import type { EventRow } from "@/lib/db/types";
  *    so a revive costs real prep, not a click.
  * 4. The streak number is the count of days with prep in the current run (rest and revived days bridge the
  *    run but do not add to it).
+ * 5. Interview dates are MILESTONES (added 2026-11-21): the interview day itself never breaks the streak
+ *    (it is free, and does not use the weekly rest day), the hub shows the road to each interview (days
+ *    prepped since it was added), and after the date it shows how many days were prepped for it.
  * Days are calendar days in the user's own timezone, so practice at 00:30 counts for the day it happened.
  */
 
@@ -50,7 +53,28 @@ export type StreakStatus =
   | "reviving" // came back; practice reps due to restore the old run
   | "broken"; // gap too long; a new streak starts with the next action
 
-export type DayState = "active" | "rest" | "missed" | "revived" | "today" | "future" | "none";
+export type DayState = "active" | "rest" | "interview" | "missed" | "revived" | "today" | "future" | "none";
+
+/** Most days a milestone track lists (the newest ones), so a far-off interview stays readable. */
+export const MILESTONE_TRACK_DAYS = 21;
+
+export interface InterviewMilestone {
+  interviewId: string;
+  /** Interview date (YYYY-MM-DD). */
+  date: string;
+  /** Local day the interview was added: the start of the road to it. */
+  addedOn: string;
+  status: "upcoming" | "today" | "done";
+  daysToGo: number;
+  /** Days between adding the interview and the day before it. */
+  windowDays: number;
+  /** Of those, the days already behind the user (all of them once the interview has come). */
+  elapsedDays: number;
+  /** Of the elapsed days, the days with prep. */
+  preppedDays: number;
+  /** The last MILESTONE_TRACK_DAYS days of the road, up to the day before the interview. */
+  track: { date: string; state: "prepped" | "missed" | "today" | "future" }[];
+}
 
 export interface StreakRevive {
   /** Missed days that were not forgiven. */
@@ -72,20 +96,22 @@ export interface StreakSummary {
   restUsedThisWeek: boolean;
   revive: StreakRevive | null;
   /** Monday to Sunday of the current week. */
-  week: { date: string; label: string; state: DayState }[];
+  week: { date: string; label: string; state: DayState; interview: boolean }[];
   /** Days with prep and practice reps so far this week. */
   weekDays: number;
   weekReps: number;
   /** Days to the nearest interview that is today or later; null when no interview date is set. */
   daysToInterview: number | null;
+  /** One per interview with a date, soonest first. */
+  milestones: InterviewMilestone[];
 }
 
 export interface StreakInput {
   events: Pick<EventRow, "name" | "at" | "props">[];
   now: Date;
   timeZone?: string;
-  /** Interview dates (YYYY-MM-DD) for the countdown. */
-  interviewDates?: (string | null)[];
+  /** The session's interviews: dates (YYYY-MM-DD) become milestones; addedAt starts the road to each. */
+  interviews?: { id: string; date: string | null; addedAt: Date }[];
 }
 
 const DAY_MS = 86_400_000;
@@ -133,22 +159,26 @@ export function computeStreak(input: StreakInput): StreakSummary {
   }
 
   const weekStart = weekOf(today);
-  const daysToInterview = nearestInterview(input.interviewDates ?? [], today);
+  const interviews = (input.interviews ?? []).filter((i): i is { id: string; date: string; addedAt: Date } => typeof i.date === "string" && DATE_RE.test(i.date));
+  const interviewDays = new Set(interviews.map((i) => i.date));
+  const daysToInterview = nearestInterview(interviews.map((i) => i.date), today);
+  const milestones = buildMilestones(interviews, actions, today, timeZone);
 
   if (actions.size === 0) {
     return {
       status: "none", current: 0, best: 0, today, timeZone, restUsedThisWeek: false, revive: null,
       week: WEEKDAYS.map((label, i) => {
         const date = addDays(weekStart, i);
-        return { date, label, state: date === today ? "today" : date > today ? "future" : "none" };
+        return { date, label, state: date === today ? "today" : date > today ? "future" : "none", interview: interviewDays.has(date) };
       }),
-      weekDays: 0, weekReps: 0, daysToInterview,
+      weekDays: 0, weekReps: 0, daysToInterview, milestones,
     };
   }
 
   const first = [...actions.keys()].sort()[0];
   const restWeeks = new Set<string>();
   const restDays = new Set<string>();
+  const interviewFree = new Set<string>();
   const revivedDays = new Set<string>();
 
   let count = 0; // days with prep in the current run
@@ -176,6 +206,11 @@ export function computeStreak(input: StreakInput): StreakSummary {
       }
     } else if (d !== today) {
       // A missed day (today is still in progress, so it is never a miss).
+      if (interviewDays.has(d)) {
+        interviewFree.add(d); // interview day: free, and it keeps the weekly rest day
+        best = Math.max(best, count);
+        continue;
+      }
       const wk = weekOf(d);
       const used = [...restDays].filter((x) => weekOf(x) === wk).length;
       if (used < REST_DAYS_PER_WEEK) {
@@ -214,10 +249,11 @@ export function computeStreak(input: StreakInput): StreakSummary {
     else if (actions.has(date)) state = "active";
     else if (date === today) state = "today";
     else if (date < first) state = "none";
+    else if (interviewFree.has(date)) state = "interview";
     else if (restDays.has(date)) state = "rest";
     else if (revivedDays.has(date)) state = "revived";
     else state = "missed";
-    return { date, label, state };
+    return { date, label, state, interview: interviewDays.has(date) };
   });
 
   let weekDays = 0;
@@ -228,12 +264,44 @@ export function computeStreak(input: StreakInput): StreakSummary {
     weekReps += reps.get(date) ?? 0;
   }
 
-  return { status, current, best, today, timeZone, restUsedThisWeek: restWeeks.has(weekStart), revive, week, weekDays, weekReps, daysToInterview };
+  return { status, current, best, today, timeZone, restUsedThisWeek: restWeeks.has(weekStart), revive, week, weekDays, weekReps, daysToInterview, milestones };
 }
 
-function nearestInterview(dates: (string | null)[], today: string): number | null {
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+function buildMilestones(interviews: { id: string; date: string; addedAt: Date }[], actions: Map<string, number>, today: string, timeZone: string): InterviewMilestone[] {
+  return interviews
+    .map((iv) => {
+      // Added after the date (a past interview logged later): the road is empty.
+      const addedOn = localDay(iv.addedAt, timeZone) <= iv.date ? localDay(iv.addedAt, timeZone) : iv.date;
+      const last = addDays(iv.date, -1); // the road ends the day before the interview
+      const windowDays = Math.max(0, diffDays(iv.date, addedOn));
+      const days: string[] = [];
+      for (let d = addedOn; d <= last; d = addDays(d, 1)) days.push(d);
+      // Today joins the elapsed days only once it has prep, so "3 of 4 so far" never counts today as a miss.
+      const elapsed = days.filter((d) => d < today || (d === today && actions.has(d)));
+      const track = days.slice(-MILESTONE_TRACK_DAYS).map((date) => ({
+        date,
+        state: actions.has(date) ? ("prepped" as const) : date > today ? ("future" as const) : date === today ? ("today" as const) : ("missed" as const),
+      }));
+      const daysToGo = diffDays(iv.date, today);
+      return {
+        interviewId: iv.id,
+        date: iv.date,
+        addedOn,
+        status: daysToGo > 0 ? ("upcoming" as const) : daysToGo === 0 ? ("today" as const) : ("done" as const),
+        daysToGo: Math.max(0, daysToGo),
+        windowDays,
+        elapsedDays: elapsed.length,
+        preppedDays: elapsed.filter((d) => actions.has(d)).length,
+        track,
+      };
+    })
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+function nearestInterview(dates: string[], today: string): number | null {
   const ahead = dates
-    .filter((d): d is string => typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d))
     .map((d) => diffDays(d, today))
     .filter((n) => n >= 0);
   return ahead.length ? Math.min(...ahead) : null;
