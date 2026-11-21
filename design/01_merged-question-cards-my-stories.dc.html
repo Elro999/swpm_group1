@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>My stories, building a story from a CV prompt</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.theme-light{--page:#FFFFFF;--card:#FFFFFF;--sub:#F4F4F5;--line:#E4E4E7;--line2:#D4D4D8;--text:#18181B;--muted:#63636B;--quote:#52525B;--quoteBar:#D4D4D8;--accent:#4F46E5;--accentHover:#4338CA;--link:#4F46E5;--chipBg:#EEF2FF;--chipText:#4338CA;--okBg:#F0FDF4;--okLine:#BBF7D0;--okText:#15803D;--warnBg:#FFFBEB;--warnLine:#FDE68A;--warnText:#92400E;--markBg:#FEF3C7;--markText:#78350F;--field:#FFFFFF}
+.theme-dark{--page:#09090B;--card:#09090B;--sub:#18181B;--line:#27272A;--line2:#3F3F46;--text:#FAFAFA;--muted:#A1A1AA;--quote:#A1A1AA;--quoteBar:#3F3F46;--accent:#4F46E5;--accentHover:#4338CA;--link:#A5B4FC;--chipBg:#1E1B4B;--chipText:#C7D2FE;--okBg:#052E16;--okLine:#14532D;--okText:#86EFAC;--warnBg:#1F1A0B;--warnLine:#3D3212;--warnText:#FCD34D;--markBg:#3B2F0B;--markText:#FDE68A;--field:#09090B}
+a{color:var(--link)}a:hover{color:var(--accentHover)}
+.btn1:hover{background:var(--accentHover)}
+.btn2:hover{background:var(--sub)}
+textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
+</style>
+</helmet>
+<div class="theme-{{ theme }}" style="min-height: 100vh; background: var(--page); color: var(--text); font-family: Geist, system-ui, sans-serif; font-size: 15px; line-height: 1.5">
+
+<header style="border-bottom: 1px solid var(--line)">
+<div style="max-width: 768px; margin: 0 auto; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap">
+<span style="font-weight: 600; font-size: 14px">Interview Prep Companion</span>
+<nav style="display: flex; gap: 20px; font-size: 13px">
+<a href="#" aria-current="page" style="color: var(--text); text-decoration: none">My stories</a>
+<a href="#" style="color: var(--muted); text-decoration: none">Privacy</a>
+</nav>
+</div>
+</header>
+
+<main style="max-width: 768px; margin: 0 auto; padding: 40px 20px 80px; display: flex; flex-direction: column; gap: 20px">
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<h1 style="margin: 0; font-size: 34px; line-height: 1.15; font-weight: 600; letter-spacing: -0.02em">My stories</h1>
+<p style="margin: 0; color: var(--muted); font-size: 15px">Paste your stories in your own words. We put your decision first and show which actions were yours and which were the team's. We only ever use your words: nothing is added or made bigger.</p>
+<a href="Main.dc.html" style="font-size: 14px; text-decoration: none; margin-top: 4px">← Back to Q1: Problem Structuring</a>
+</div>
+
+<section aria-labelledby="guide-title" style="border: 1px solid var(--line); background: var(--sub); border-radius: 12px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap">
+<span style="font-size: 12px; font-weight: 600; color: var(--muted)">Building a story for</span>
+<span style="background: var(--chipBg); color: var(--chipText); font-size: 12px; font-weight: 500; padding: 2px 10px; border-radius: 999px">Q1 · Problem Structuring</span>
+</div>
+<h2 id="guide-title" style="margin: 0; font-size: 16px; font-weight: 500; line-height: 1.45">Tell me about a specific past situation where you faced a vague problem. What was your own decision about how to structure it and define a measurable plan?</h2>
+<p style="margin: 0; font-size: 14px; color: var(--text)">Starting from your CV: <mark style="background: var(--markBg); color: var(--markText); padding: 0 3px; border-radius: 3px">“benchmarked 15 on a self-built 9-parameter framework”</mark></p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 12px; font-weight: 600; color: var(--muted)">Answer these in your own words</span>
+<ol style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 14px">
+<li><strong style="font-weight: 600">Situation:</strong> what was going on, and why did it matter?</li>
+<li><strong style="font-weight: 600">Your decision:</strong> what did <em>you</em> choose to do? Say “I”, not “we”.</li>
+<li><strong style="font-weight: 600">For this question:</strong> how did you break the analysis into parts and decide what to compare?</li>
+<li><strong style="font-weight: 600">Result:</strong> what changed, and how do you know?</li>
+</ol>
+</div>
+<p style="margin: 0; font-size: 13px; color: var(--muted)">These questions stay here and aren’t added to your story. When you add it, we check it the same way as your other stories.</p>
+</section>
+
+<section style="border: 1px solid var(--line); background: var(--card); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 10px">
+<label for="story-text" style="font-size: 14px; font-weight: 500">Paste one or more stories</label>
+<sc-if value="{{ hasDraft }}" hint-placeholder-val="{{ false }}">
+<p style="margin: 0; font-size: 13px; color: var(--muted)">Your unsaved text is still here. We added the CV line below it, after a blank line, so it starts a new story.</p>
+</sc-if>
+<textarea id="story-text" value="{{ text }}" onChange="{{ onText }}" rows="12" placeholder="Leave a blank line between stories. Say what happened, what you decided, and what changed." style="width: 100%; box-sizing: border-box; min-height: 260px; padding: 12px 14px; border: 1px solid var(--line2); border-radius: 10px; background: var(--field); color: var(--text); font: inherit; font-size: 15px; line-height: 1.55; resize: vertical"></textarea>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px">
+<button class="btn1" onClick="{{ add }}" disabled="{{ cantAdd }}" style="min-height: 44px; padding: 0 18px; border: 0; border-radius: 8px; background: var(--accent); color: #FFFFFF; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; {{ addStyle }}">Add to my stories</button>
+<span style="font-size: 13px; color: var(--muted)">{{ addHint }}</span>
+</div>
+</section>
+
+<sc-if value="{{ addedFits }}" hint-placeholder-val="{{ false }}">
+<section role="status" style="border: 1px solid var(--okLine); background: var(--okBg); border-radius: 12px; padding: 16px 20px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; gap: 10px; align-items: center; color: var(--okText); font-size: 14px; font-weight: 600">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+Added and linked to Q1: Problem Structuring
+</div>
+<blockquote style="margin: 0; padding-left: 12px; border-left: 2px solid var(--quoteBar); font-size: 13px; color: var(--quote); font-style: italic">Why it fits: “{{ why }}”</blockquote>
+<div style="display: flex; flex-wrap: wrap; gap: 10px">
+<a class="btn1" href="Main.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px; border-radius: 8px; background: var(--accent); color: #FFFFFF; font-size: 14px; font-weight: 600; text-decoration: none; box-sizing: border-box">Back to Q1</a>
+</div>
+</section>
+</sc-if>
+
+<sc-if value="{{ addedNoFit }}" hint-placeholder-val="{{ false }}">
+<section role="status" style="border: 1px solid var(--warnLine); background: var(--warnBg); border-radius: 12px; padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; color: var(--warnText); font-size: 14px">
+<strong style="font-weight: 600">Saved in My stories, but not linked to Q1 yet</strong>
+<span>It doesn’t show Problem Structuring yet. Add what you decided and how you broke the problem down, then we’ll check it again.</span>
+<div style="display: flex; flex-wrap: wrap; gap: 10px">
+<button class="btn2" onClick="{{ editNew }}" style="min-height: 44px; padding: 0 16px; border: 1px solid var(--line2); border-radius: 8px; background: var(--card); color: var(--text); font: inherit; font-size: 14px; font-weight: 500; cursor: pointer">Edit this story</button>
+<a href="Main.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; font-weight: 500; text-decoration: none">Back to Q1</a>
+</div>
+</section>
+</sc-if>
+
+<div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-top: 8px">
+<h2 style="margin: 0; font-size: 18px; font-weight: 600">Your story bank ({{ count }})</h2>
+<a href="Main.dc.html" style="font-size: 14px; text-decoration: none">Back to the interview →</a>
+</div>
+
+<sc-for list="{{ bank }}" as="s" hint-placeholder-count="2">
+<article style="border: 1px solid var(--line); background: var(--card); border-radius: 12px; padding: 16px 20px; display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap">
+<span style="font-size: 15px; font-weight: 600">{{ s.name }}</span>
+<span style="font-size: 12px; font-weight: 500; padding: 2px 10px; border-radius: 999px; {{ s.chipStyle }}">{{ s.chip }}</span>
+</div>
+<span style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: var(--muted)">YOUR DECISION</span>
+<p style="margin: 0; font-size: 14px; {{ s.lineStyle }}">{{ s.line }}</p>
+</article>
+</sc-for>
+
+<p style="margin: 0; font-size: 13px; color: var(--muted)">Story cards are shortened here; on the real page each one keeps its full situation, result and “Who did what” view.</p>
+
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"unsavedDraft":{"editor":"boolean","default":false},"fitResult":{"editor":"enum","options":["fits","noFit"],"default":"fits"},"$preview":{"width":1280,"height":2000}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { text: null, added: null, addedText: '' };
+  }
+  renderVals() {
+    const theme = this.props.theme === 'dark' ? 'dark' : 'light';
+    const cvLine = 'Benchmarked 15 on a self-built 9-parameter framework.';
+    const draft = 'Draft I started earlier about leading the campus product club…';
+    // Arriving from a card: the CV line is the starting sentence. Unsaved text is kept and the line goes below it.
+    const start = this.props.unsavedDraft ? draft + '\n\n' + cvLine + ' ' : cvLine + ' ';
+    const text = this.state.text ?? start;
+    const trimmed = text.trim();
+    const onlyCv = trimmed === cvLine || trimmed === start.trim();
+    const added = this.state.added;
+    // "Why it fits" quotes the user's own words: the first sentence that says "I", else the first sentence.
+    const sentences = this.state.addedText.split(/(?<=[.!?])\s+/).map((x) => x.trim()).filter(Boolean);
+    const why = sentences.find((x) => /\bI\b/.test(x) && x !== cvLine) || sentences[0] || '';
+    const bank = [
+      { name: 'Story 1', chip: 'Structured', line: '“Curious whether a workaround existed, I did not accept this at face value.”' },
+      { name: 'Story 2', chip: 'Needs a decision', line: 'We couldn’t find the decision you made. Which choice in this story was yours?', warn: true }
+    ];
+    if (added) {
+      const fits = added === 'fits';
+      bank.unshift({
+        name: 'Story 3', chip: fits ? 'Linked to Q1' : 'Not linked yet', ok: fits,
+        line: fits ? '“' + why + '”' : 'We’ll show your decision here once we can find it.', warn: !fits
+      });
+    }
+    return {
+      theme, text,
+      hasDraft: !!this.props.unsavedDraft && !added,
+      onText: (e) => this.setState({ text: e.target.value }),
+      cantAdd: trimmed.length === 0 || !!added,
+      addStyle: trimmed.length === 0 || added ? 'opacity: 0.5; cursor: not-allowed' : '',
+      addHint: added ? 'Added.' : onlyCv ? 'Write around the CV line: the situation, your decision, the result.' : 'We’ll structure it and check it against Q1.',
+      add: () => this.setState({ added: this.props.fitResult === 'noFit' ? 'noFit' : 'fits', addedText: text }),
+      editNew: () => this.setState({ added: null }),
+      addedFits: added === 'fits', addedNoFit: added === 'noFit', why,
+      count: bank.length,
+      bank: bank.map((s) => ({
+        ...s,
+        chipStyle: s.ok ? 'background: var(--okBg); color: var(--okText); border: 1px solid var(--okLine)' : 'background: var(--chipBg); color: var(--chipText)',
+        lineStyle: s.warn ? 'color: var(--warnText)' : 'color: var(--text)'
+      }))
+    };
+  }
+}
+</script>
+</body>
+</html>

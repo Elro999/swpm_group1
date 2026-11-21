@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Role page, merged questions</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.theme-light{--page:#FFFFFF;--card:#FFFFFF;--sub:#F4F4F5;--line:#E4E4E7;--line2:#D4D4D8;--text:#18181B;--muted:#63636B;--quote:#52525B;--quoteBar:#D4D4D8;--accent:#4F46E5;--accentHover:#4338CA;--link:#4F46E5;--chipBg:#EEF2FF;--chipText:#4338CA;--okBg:#F0FDF4;--okLine:#BBF7D0;--okText:#15803D;--warnBg:#FFFBEB;--warnLine:#FDE68A;--warnText:#92400E;--markBg:#FEF3C7;--markText:#78350F;--hlLine:#6366F1;--hlBg:#EEF2FF;--hlGlow:rgba(99,102,241,.45)}
+.theme-dark{--page:#09090B;--card:#09090B;--sub:#18181B;--line:#27272A;--line2:#3F3F46;--text:#FAFAFA;--muted:#A1A1AA;--quote:#A1A1AA;--quoteBar:#3F3F46;--accent:#4F46E5;--accentHover:#4338CA;--link:#A5B4FC;--chipBg:#1E1B4B;--chipText:#C7D2FE;--okBg:#052E16;--okLine:#14532D;--okText:#86EFAC;--warnBg:#1F1A0B;--warnLine:#3D3212;--warnText:#FCD34D;--markBg:#3B2F0B;--markText:#FDE68A;--hlLine:#818CF8;--hlBg:#1E1B4B;--hlGlow:rgba(129,140,248,.5)}
+a{color:var(--link)}a:hover{color:var(--accentHover)}
+.row:hover{background:var(--line)}
+.btn2:hover{background:var(--sub)}
+.btn1:hover{background:var(--accentHover)}
+details summary{cursor:pointer}
+@keyframes consentPulse{0%{box-shadow:0 0 0 0 var(--hlGlow)}70%{box-shadow:0 0 0 12px transparent}100%{box-shadow:0 0 0 0 transparent}}
+@keyframes consentPulseB{0%{box-shadow:0 0 0 0 var(--hlGlow)}70%{box-shadow:0 0 0 12px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.consent-hl.hl-0{animation:consentPulse 1.2s ease-out 3}
+.consent-hl.hl-1{animation:consentPulseB 1.2s ease-out 3}
+</style>
+</helmet>
+<div class="theme-{{ theme }}" style="min-height: 100vh; background: var(--page); color: var(--text); font-family: Geist, system-ui, sans-serif; font-size: 15px; line-height: 1.5">
+
+<header style="border-bottom: 1px solid var(--line)">
+<div style="max-width: 768px; margin: 0 auto; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap">
+<span style="font-weight: 600; font-size: 14px">Interview Prep Companion</span>
+<nav style="display: flex; gap: 20px; font-size: 13px">
+<a href="#" style="color: var(--muted); text-decoration: none">My stories</a>
+<a href="#" style="color: var(--muted); text-decoration: none">Privacy</a>
+</nav>
+</div>
+</header>
+
+<main style="max-width: 768px; margin: 0 auto; padding: 40px 20px 80px; display: flex; flex-direction: column; gap: 20px">
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<h1 style="margin: 0; font-size: 34px; line-height: 1.15; font-weight: 600; letter-spacing: -0.02em">Product Manager (Associate PM / Product Manager 1)</h1>
+<p style="margin: 0; color: var(--muted); font-size: 14px">Interview in 4 days. 5 questions from the job description, each with lines from your CV that could become your answer.</p>
+</div>
+
+<div role="status" style="display: flex; flex-direction: column; font-size: 13px; border-radius: 10px; {{ stripStyle }}">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 10px 14px">
+<sc-if value="{{ failed }}" hint-placeholder-val="{{ false }}">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20L12 3z"></path><path d="M12 10v4"></path><path d="M12 17h.01"></path></svg>
+</sc-if>
+<sc-if value="{{ notFailed }}" hint-placeholder-val="{{ true }}">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5V5a2 2 0 0 1 2-2h12v16H6a2 2 0 0 0-2 2"></path><path d="M8 7h6"></path></svg>
+</sc-if>
+<span style="flex: 1 1 260px; min-width: 0">{{ bankLine }}</span>
+<sc-if value="{{ failed }}" hint-placeholder-val="{{ false }}">
+<button class="btn2" onClick="{{ retry }}" style="min-height: 36px; padding: 0 14px; border: 1px solid var(--warnLine); border-radius: 8px; background: var(--card); color: var(--text); font: inherit; font-size: 13px; font-weight: 500; cursor: pointer">Try again</button>
+</sc-if>
+<sc-if value="{{ showAddFirst }}" hint-placeholder-val="{{ false }}">
+<a href="#" style="font-weight: 500; text-decoration: none">Add your first story</a>
+</sc-if>
+</div>
+<sc-for list="{{ pendingRows }}" as="r" hint-placeholder-count="1">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 10px 14px; border-top: 1px solid var(--line)">
+<span style="flex: 1 1 260px; min-width: 0; padding-left: 30px; color: var(--text)">{{ r.text }}</span>
+<button class="btn2" onClick="{{ r.run }}" style="min-height: 36px; padding: 0 14px; border: 1px solid var(--line2); border-radius: 8px; background: transparent; color: var(--text); font: inherit; font-size: 13px; font-weight: 500; cursor: pointer">{{ r.label }}</button>
+</div>
+</sc-for>
+</div>
+
+<div ref="{{ setBanner }}" style="scroll-margin-top: 24px">
+<sc-if value="{{ needsConsent }}" hint-placeholder-val="{{ true }}">
+<section class="{{ bannerClass }}" style="border-radius: 12px; padding: 18px 20px; display: flex; flex-wrap: wrap; gap: 14px 20px; align-items: center; justify-content: space-between; transition: background 200ms, border-color 200ms; {{ bannerStyle }}">
+<div style="flex: 1 1 360px; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+<sc-if value="{{ highlight }}" hint-placeholder-val="{{ false }}">
+<span style="font-size: 12px; font-weight: 600; color: var(--chipText); letter-spacing: 0.02em">ONE STEP BEFORE Q{{ pendingN }}</span>
+</sc-if>
+<strong style="font-size: 15px; font-weight: 600">Turn on practice recording</strong>
+<span style="color: var(--muted); font-size: 13px">We record your spoken answer and turn it into text so feedback can point to the exact moment to fix. Audio is deleted after 30 days.</span>
+<details style="font-size: 13px; color: var(--muted)">
+<summary style="color: var(--link)">What happens to my recording</summary>
+<ul style="margin: 8px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px">
+<li>Audio and text go to our AI providers (speech-to-text and language model) only to give you feedback.</li>
+<li>A member of our small student team may read transcripts and feedback to check accuracy.</li>
+<li>Audio is deleted after 30 days. You can delete everything at any time.</li>
+</ul>
+</details>
+</div>
+<button class="btn1" onClick="{{ agree }}" style="min-height: 44px; padding: 0 18px; border: 0; border-radius: 8px; background: var(--accent); color: #FFFFFF; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer">{{ agreeLabel }}</button>
+</section>
+</sc-if>
+
+<sc-if value="{{ consented }}" hint-placeholder-val="{{ false }}">
+<div style="border: 1px solid var(--okLine); background: var(--okBg); border-radius: 12px; padding: 12px 16px; font-size: 13px; color: var(--okText); display: flex; gap: 10px; align-items: center">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+<span>{{ readyLine }}</span>
+</div>
+</sc-if>
+</div>
+
+<h2 style="margin: 4px 0 0; font-size: 18px; font-weight: 600">Questions to practise (5)</h2>
+
+<sc-for list="{{ questions }}" as="item" hint-placeholder-count="5">
+<article style="border: 1px solid var(--line); background: var(--card); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 16px">
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap">
+<div style="display: flex; align-items: center; gap: 8px">
+<span style="color: var(--muted); font-size: 13px; font-weight: 500">Q{{ item.n }}</span>
+<span style="background: var(--chipBg); color: var(--chipText); font-size: 12px; font-weight: 500; padding: 2px 10px; border-radius: 999px">{{ item.comp }}</span>
+</div>
+<span style="font-size: 12px; font-weight: 500; padding: 2px 10px; border-radius: 999px; {{ item.statusStyle }}">{{ item.status }}</span>
+</div>
+<p style="margin: 0; font-size: 16px; font-weight: 500; line-height: 1.45">{{ item.q }}</p>
+<blockquote style="margin: 0; padding-left: 12px; border-left: 2px solid var(--quoteBar); font-size: 13px; color: var(--quote); font-style: italic">From the JD: “{{ item.jd }}”</blockquote>
+</div>
+
+<sc-if value="{{ item.hasStory }}" hint-placeholder-val="{{ false }}">
+<div style="border: 1px solid var(--okLine); background: var(--okBg); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap">
+<div style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<span style="font-size: 12px; color: var(--okText); font-weight: 500">{{ item.storyLabel }}</span>
+<span style="font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 8px; flex-wrap: wrap">{{ item.story.title }}
+<span style="background: var(--chipBg); color: var(--chipText); font-size: 11px; font-weight: 500; padding: 1px 8px; border-radius: 999px">{{ item.story.state }}</span>
+</span>
+</div>
+<div style="display: flex; gap: 16px; font-size: 13px">
+<a href="#" title="Opens this story on My stories" style="text-decoration: none">Open</a>
+<button onClick="{{ item.togglePick }}" aria-expanded="{{ item.picking }}" style="all: unset; cursor: pointer; color: var(--link)">{{ item.changeLabel }}</button>
+</div>
+</div>
+<blockquote style="margin: 0; padding-left: 12px; border-left: 2px solid var(--quoteBar); font-size: 13px; color: var(--quote); font-style: italic">Why it fits: “{{ item.story.why }}”</blockquote>
+</div>
+</sc-if>
+
+<sc-if value="{{ item.picking }}" hint-placeholder-val="{{ false }}">
+<div role="group" aria-label="Choose a story for Q{{ item.n }}" style="border: 1px solid var(--line); background: var(--sub); border-radius: 10px; padding: 8px; display: flex; flex-direction: column; gap: 4px">
+<span style="font-size: 12px; font-weight: 600; color: var(--muted); padding: 4px 8px">Your saved stories, best fit first</span>
+<sc-for list="{{ item.options }}" as="o" hint-placeholder-count="3">
+<button onClick="{{ o.pick }}" style="all: unset; box-sizing: border-box; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 44px; padding: 8px 10px; border-radius: 8px; {{ o.style }}">
+<span style="display: flex; flex-direction: column; gap: 1px; min-width: 0">
+<span style="font-size: 14px; font-weight: 500; color: var(--text)">{{ o.title }}</span>
+<sc-if value="{{ o.best }}" hint-placeholder-val="{{ false }}">
+<span style="font-size: 12px; color: var(--okText)">Best fit for this question</span>
+</sc-if>
+</span>
+<sc-if value="{{ o.current }}" hint-placeholder-val="{{ false }}">
+<span style="flex: none; display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text)">
+<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--okText)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+In use
+</span>
+</sc-if>
+</button>
+</sc-for>
+<div style="border-top: 1px solid var(--line); margin-top: 4px; padding: 8px 8px 2px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px">
+<button class="btn2" onClick="{{ item.remove }}" style="display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 12px; border: 1px solid var(--line2); border-radius: 8px; background: var(--card); color: var(--text); font: inherit; font-size: 13px; font-weight: 500; cursor: pointer">
+<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 15 15 9"></path><path d="M11 6l1.5-1.5a4.2 4.2 0 0 1 6 6L17 12"></path><path d="M13 18l-1.5 1.5a4.2 4.2 0 0 1-6-6L7 12"></path></svg>
+Unlink this story
+</button>
+<span style="font-size: 12px; color: var(--muted)">Only the link to this question is removed. The story stays in My stories.</span>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ item.hasPrompts }}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 12px; font-weight: 600; color: var(--muted)">{{ item.topLabel }}</span>
+<sc-if value="{{ item.top.isCv }}" hint-placeholder-val="{{ true }}">
+<a class="row" href="Stories.dc.html" style="display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 10px 12px; border: 1px solid var(--line); background: var(--sub); border-radius: 10px; text-decoration: none; color: var(--text); font-size: 14px; min-height: 44px; box-sizing: border-box">
+<span style="min-width: 0">When you <mark style="background: var(--markBg); color: var(--markText); padding: 0 3px; border-radius: 3px">“{{ item.top.cv }}”</mark>, {{ item.top.ask }}</span>
+<span style="flex: none; font-size: 13px; font-weight: 500; color: var(--link); white-space: nowrap">Build story →</span>
+</a>
+</sc-if>
+<sc-if value="{{ item.top.isStory }}" hint-placeholder-val="{{ false }}">
+<button class="row" onClick="{{ item.top.use }}" style="all: unset; box-sizing: border-box; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 10px 12px; border: 1px solid var(--line); background: var(--sub); border-radius: 10px; color: var(--text); font-size: 14px; min-height: 44px">
+<span style="min-width: 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap"><span style="background: var(--chipBg); color: var(--chipText); font-size: 11px; font-weight: 500; padding: 1px 8px; border-radius: 999px">Saved story</span>{{ item.top.title }}</span>
+<span style="flex: none; font-size: 13px; font-weight: 500; color: var(--link); white-space: nowrap">Use this story</span>
+</button>
+</sc-if>
+<sc-if value="{{ item.hasMore }}" hint-placeholder-val="{{ true }}">
+<button onClick="{{ item.toggle }}" aria-expanded="{{ item.open }}" style="all: unset; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text); min-height: 32px">
+<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="{{ item.chevron }}"><path d="m9 6 6 6-6 6"></path></svg>
+{{ item.promptsLabel }}
+</button>
+</sc-if>
+<sc-if value="{{ item.showRest }}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<sc-for list="{{ item.rest }}" as="p" hint-placeholder-count="2">
+<sc-if value="{{ p.isCv }}" hint-placeholder-val="{{ true }}">
+<a class="row" href="Stories.dc.html" style="display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 10px 12px; border: 1px solid var(--line); background: var(--sub); border-radius: 10px; text-decoration: none; color: var(--text); font-size: 14px; min-height: 44px; box-sizing: border-box">
+<span style="min-width: 0">When you <mark style="background: var(--markBg); color: var(--markText); padding: 0 3px; border-radius: 3px">“{{ p.cv }}”</mark>, {{ p.ask }}</span>
+<span style="flex: none; font-size: 13px; font-weight: 500; color: var(--link); white-space: nowrap">Build story →</span>
+</a>
+</sc-if>
+<sc-if value="{{ p.isStory }}" hint-placeholder-val="{{ false }}">
+<button class="row" onClick="{{ p.use }}" style="all: unset; box-sizing: border-box; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 10px 12px; border: 1px solid var(--line); background: var(--sub); border-radius: 10px; color: var(--text); font-size: 14px; min-height: 44px">
+<span style="min-width: 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap"><span style="background: var(--chipBg); color: var(--chipText); font-size: 11px; font-weight: 500; padding: 1px 8px; border-radius: 999px">Saved story</span>{{ p.title }}</span>
+<span style="flex: none; font-size: 13px; font-weight: 500; color: var(--link); white-space: nowrap">Use this story</span>
+</button>
+</sc-if>
+</sc-for>
+</div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ item.noPrompts }}" hint-placeholder-val="{{ false }}">
+<div style="border: 1px dashed var(--warnLine); background: var(--warnBg); border-radius: 10px; padding: 12px 14px; font-size: 13px; color: var(--warnText)">Gap: nothing on your CV or in your saved stories shows this yet. A small example works too: think of one test you ran, even in a class project, and write it up on <a href="#" style="color: inherit; font-weight: 600">My stories</a>.</div>
+</sc-if>
+
+<div style="display: flex; flex-wrap: wrap; gap: 10px; border-top: 1px solid var(--line); padding-top: 16px">
+<button class="btn1" onClick="{{ item.practise }}" aria-label="Practise question {{ item.n }}" style="display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 20px; border: 0; border-radius: 8px; background: var(--accent); color: #FFFFFF; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer">
+<svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0"></path><path d="M12 18v3"></path></svg>
+Practise
+</button>
+</div>
+
+</article>
+</sc-for>
+
+<section style="border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 14px; font-weight: 600">Also tested in every answer: Clear Communication</span>
+<blockquote style="margin: 0; padding-left: 12px; border-left: 2px solid var(--quoteBar); font-size: 13px; color: var(--quote); font-style: italic">“Clear written and spoken communication; you can explain the why to designers, engineers and founders.”</blockquote>
+<span style="font-size: 13px; color: var(--muted)">Your feedback covers this on each question, so it has no card of its own.</span>
+</section>
+
+<section aria-labelledby="prep-title" style="border: 1px solid var(--line); background: var(--card); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px">
+<h2 id="prep-title" style="margin: 0; font-size: 18px; font-weight: 600">Prep list</h2>
+<span style="font-size: 13px; color: var(--muted)">0 of 3 done · 4 days to go</span>
+</div>
+<ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px">
+<li style="border-left: 2px solid var(--chipBg); padding-left: 12px; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 11px; font-weight: 600; letter-spacing: 0.06em; color: var(--muted)">TODAY · 20 MIN</span>
+<a href="#" style="font-size: 14px; font-weight: 500">Practise Q1: Problem Structuring</a>
+</li>
+<li style="border-left: 2px solid var(--chipBg); padding-left: 12px; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 11px; font-weight: 600; letter-spacing: 0.06em; color: var(--muted)">TOMORROW · 20 MIN</span>
+<a href="#" style="font-size: 14px; font-weight: 500">Build a story for Experimentation</a>
+<span style="font-size: 13px; color: var(--muted)">This competency has no story yet.</span>
+</li>
+<li style="border-left: 2px solid var(--chipBg); padding-left: 12px; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 11px; font-weight: 600; letter-spacing: 0.06em; color: var(--muted)">IN 2 DAYS · 20 MIN</span>
+<a href="#" style="font-size: 14px; font-weight: 500">Mark “Regional disparities analysis” ready</a>
+</li>
+</ol>
+</section>
+
+<details style="border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px">
+<summary style="font-weight: 500">Delete my data</summary>
+<p style="margin: 10px 0 12px; font-size: 13px; color: var(--muted)">Removes your job descriptions, CV, stories, recordings and feedback from this browser’s session.</p>
+<button style="min-height: 44px; padding: 0 16px; border: 1px solid #DC2626; border-radius: 8px; background: transparent; color: #DC2626; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer">Delete my data</button>
+</details>
+
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"consented":{"editor":"boolean","default":false},"storyBank":{"editor":"enum","options":["none","matched","newStory","noMatch","loadError"],"default":"newStory"},"matchResult":{"editor":"enum","options":["match","noMatch","error"],"default":"match"},"$preview":{"width":1280,"height":3000}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { agreed: null, open: {}, pending: null, hlKey: 0, picking: {}, override: {}, removed: {},
+      runState: null, failedScope: null, newLinked: false, newChecked: false, loadFixed: false, checked: {}, lastResult: null };
+    this.banner = null;
+  }
+  renderVals() {
+    const theme = this.props.theme === 'dark' ? 'dark' : 'light';
+    const consented = this.state.agreed ?? this.props.consented ?? false;
+    const bank = this.props.storyBank ?? 'newStory';
+    const { runState, newLinked, loadFixed, checked } = this.state;
+    // storyBank sets the match that ran on page load: 'noMatch' ran but nothing fit, 'loadError' failed until "Try again".
+    // matchResult sets what the next button-triggered match returns.
+    const loadFailed = bank === 'loadError' && !loadFixed;
+    // Saved stories. "why" is the verbatim line from the story that the match cites (the app's "Why it fits").
+    const library = {
+      'Regional disparities analysis': { state: 'Ready', why: 'I split the sign-up data by region and found two regions driving most of the drop.' },
+      'Early-game retention deep-dive': { state: 'Draft', why: 'I compared players who came back on day 7 with those who did not.' },
+      'KYC onboarding workflow fix': { state: 'Draft', why: 'I chose to change the document step first because that is where most users stopped.' },
+      'Onboarding tutorial A/B test': { state: 'Draft', why: 'I set the success metric before launch and stopped the variant when it lost.' }
+    };
+    // Stories matched automatically on page load; the new one only after "Match new story".
+    const loadMatched = bank === 'matched' || bank === 'newStory' || (bank === 'loadError' && loadFixed);
+    const auto = loadMatched ? { q2: 'Regional disparities analysis' } : {};
+    const extra = newLinked ? { q5: 'Onboarding tutorial A/B test' } : {};
+    const stories = { ...auto, ...extra };
+    const bankTitles = bank === 'none' ? [] : ['Regional disparities analysis', 'Early-game retention deep-dive', 'KYC onboarding workflow fix']
+      .concat(bank === 'newStory' ? ['Onboarding tutorial A/B test'] : []);
+    const { override, picking, removed } = this.state;
+    const data = [
+      { id: 'q1', comp: 'Problem Structuring', q: 'Tell me about a specific past situation where you faced a vague problem. What was your own decision about how to structure it and define a measurable plan?', jd: 'you break a vague problem into a clear hypothesis, assumptions and a measurable plan.', prompts: [
+        { cv: 'benchmarked 15 on a self-built 9-parameter framework', ask: 'how did you break the analysis into parts and decide what to compare?' },
+        { cv: 'identified regional disparities', ask: 'how did you investigate the problem and separate the main drivers from other factors?' },
+        { cv: 'isolating early-game win rate as the primary driver of new-user retention', ask: 'how did you narrow down which factor to focus on?' },
+        { cv: 'addressed KYC funnel drop-offs by modifying workflows', ask: 'how did you map the problem and pick where to intervene?' } ] },
+      { id: 'q2', comp: 'Data-Driven Judgment', q: 'Tell me about a specific past situation where you used data to make a decision. What did you decide, and how did you handle results that were uncertain or unexpected?', jd: 'you turn product questions into analytics questions and draw honest conclusions.', prompts: [
+        { cv: 'identified regional disparities', ask: 'what did the data tell you, and what did you decide because of it?' },
+        { cv: 'isolating early-game win rate as the primary driver of new-user retention', ask: 'how sure were you, and what would have changed your mind?' } ] },
+      { id: 'q3', comp: 'Player Empathy', q: 'Tell me about a specific past situation where you learned something about users’ needs or behaviour. What decision did you make based on your understanding of them?', jd: 'Player empathy and curiosity about player psychology, behaviour and motivation.', prompts: [
+        { cv: 'isolating early-game win rate as the primary driver of new-user retention', ask: 'what did you learn about why new players stayed or left?' } ] },
+      { id: 'q4', comp: 'End-to-End Ownership', q: 'Tell me about a specific feature or project you owned from start to finish. What was a key decision you personally made along the way?', jd: 'Ship features end to end.', prompts: [
+        { cv: 'addressed KYC funnel drop-offs by modifying workflows', ask: 'which decision between finding the drop-off and shipping the change was yours?' },
+        { cv: 'benchmarked 15 on a self-built 9-parameter framework', ask: 'which parts did you own yourself, and what did you hand off?' } ] },
+      { id: 'q5', comp: 'Experimentation', q: 'Tell me about a specific experiment you ran in the past. What did you decide to do after reviewing the results, and why?', jd: 'Design A/B tests, define success metrics up front, read results honestly, and decide what to scale, iterate on or stop.', prompts: [] }
+    ];
+    const questions = data.map((d, i) => {
+      const n = d.prompts.length;
+      // A user's pick (or removal, stored as null) overrides the automatic match.
+      const autoStory = stories[d.id] || null;
+      const chosen = d.id in override;
+      const storyTitle = chosen ? override[d.id] : autoStory;
+      const hasStory = !!storyTitle;
+      const isPicking = hasStory && !!picking[d.id];
+      const ranked = autoStory ? [autoStory, ...bankTitles.filter((t) => t !== autoStory)] : bankTitles;
+      const options = ranked.map((t, k) => ({
+        title: t, best: k === 0 && !!autoStory, current: t === storyTitle,
+        style: t === storyTitle ? 'background: var(--okBg); border: 1px solid var(--okLine)' : 'border: 1px solid transparent',
+        pick: () => this.setState({
+          override: { ...override, [d.id]: t },
+          picking: { ...picking, [d.id]: false },
+          removed: { ...removed, [d.id]: null }
+        })
+      }));
+      // Prompts arrive ranked by relevance: the first is shown, the rest fold away.
+      const open = this.state.open[d.id] ?? false;
+      // An unlinked story goes back into this card's suggestions, just after the top CV prompt
+      // (the user turned it down, so it doesn't lead unless there is no CV prompt).
+      const unlinked = !hasStory && removed[d.id] ? removed[d.id] : null;
+      const cvItems = d.prompts.map((p) => ({ ...p, isCv: true, isStory: false }));
+      const storyItem = unlinked ? {
+        title: unlinked, isCv: false, isStory: true,
+        use: () => this.setState({ override: { ...override, [d.id]: unlinked }, removed: { ...removed, [d.id]: null } })
+      } : null;
+      const items = storyItem ? (cvItems.length ? [cvItems[0], storyItem, ...cvItems.slice(1)] : [storyItem]) : cvItems;
+      const total = items.length;
+      const restHasStory = items.slice(1).some((x) => x.isStory);
+      const status = hasStory ? 'Story matched' : n ? n + ' from your CV' : unlinked ? 'Saved story available' : 'Gap';
+      const statusStyle = hasStory ? 'background: var(--okBg); color: var(--okText); border: 1px solid var(--okLine)'
+        : n || unlinked ? 'background: var(--sub); color: var(--text); border: 1px solid var(--line)'
+        : 'background: var(--warnBg); color: var(--warnText); border: 1px solid var(--warnLine)';
+      return {
+        ...d, n: i + 1, hasStory,
+        story: hasStory ? { title: storyTitle, ...library[storyTitle] } : {},
+        storyLabel: chosen ? 'Chosen by you' : extra[d.id] ? 'Just matched from your new story' : 'Matched from your saved stories',
+        picking: isPicking, options,
+        changeLabel: isPicking ? 'Close' : 'Change',
+        togglePick: () => this.setState({ picking: { ...picking, [d.id]: !isPicking } }),
+        remove: () => this.setState({
+          override: { ...override, [d.id]: null },
+          picking: { ...picking, [d.id]: false },
+          removed: { ...removed, [d.id]: storyTitle },
+          checked: { ...checked, [d.id]: false },
+          lastResult: null
+        }),
+        hasPrompts: total > 0, noPrompts: total === 0 && !hasStory, status, statusStyle,
+        top: items[0] || {}, rest: items.slice(1), hasMore: total > 1, showRest: total > 1 && open, open,
+        topLabel: items[0] && items[0].isStory ? 'Most relevant from your saved stories' : 'Most relevant from your CV',
+        promptsLabel: (open ? 'Hide' : 'More') + ' prompts from your CV' + (restHasStory ? ' and stories' : '') + ' (' + (total - 1) + ')',
+        chevron: open ? 'transform: rotate(90deg)' : '',
+        toggle: () => this.setState({ open: { ...this.state.open, [d.id]: !open } }),
+        practise: () => {
+          if (consented) return;
+          this.setState({ pending: i + 1, hlKey: this.state.hlKey + 1 });
+          if (this.banner) this.banner.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      };
+    });
+    const matchedCount = Object.keys(stories).length;
+    // Unlinked stories not yet checked by a later match.
+    const unlinkedIds = Object.keys(removed).filter((id) => removed[id] && override[id] === null && !checked[id]);
+    const k = unlinkedIds.length;
+    const newPending = bank === 'newStory' && !this.state.newChecked;
+    const failed = loadFailed || runState === 'error';
+    const linkedCount = questions.filter((q) => q.hasStory).length;
+    const qName = (id) => { const q = questions.find((x) => x.id === id); return 'Q' + q.n + ': ' + q.comp; };
+    let bankLine;
+    if (failed) bankLine = 'We couldn’t match your stories just now. Nothing is lost: your stories and CV prompts are all still here.';
+    else if (this.state.lastResult) bankLine = this.state.lastResult;
+    else if (bank === 'none') bankLine = 'No saved stories yet. Add one and we’ll match it to these questions automatically.';
+    else if (bank === 'noMatch') bankLine = 'Checked your 3 saved stories: none fits these questions yet, so each card shows prompts from your CV instead.';
+    else bankLine = 'Matched your ' + (newPending ? bankTitles.length - 1 : bankTitles.length) + ' saved stories: ' + (linkedCount === 0 ? 'none is' : linkedCount + (linkedCount === 1 ? ' is' : ' are')) + ' linked to a question.';
+    // Each check covers only the stories it is about, against only the cards without a story,
+    // so no other card changes and a story the user picked is never replaced.
+    const outcome = (retry) => (retry ? 'match' : (this.props.matchResult ?? 'match'));
+    const checkUnlinked = (retry) => {
+      const result = outcome(retry);
+      if (result === 'error') { this.setState({ runState: 'error', failedScope: 'unlink' }); return; }
+      const titles = unlinkedIds.map((id) => '“' + removed[id] + '”').join(' and ');
+      if (result === 'match') {
+        const nextOverride = { ...override };
+        const nextRemoved = { ...removed };
+        unlinkedIds.forEach((id) => {
+          // Back to the automatic match when that is the story, else re-link the story itself.
+          if (stories[id] === removed[id]) delete nextOverride[id]; else nextOverride[id] = removed[id];
+          nextRemoved[id] = null;
+        });
+        this.setState({
+          runState: null, override: nextOverride, removed: nextRemoved,
+          lastResult: 'Checked again: ' + titles + (k === 1 ? ' still fits, so it’s back on ' : ' still fit, so they’re back on ') + unlinkedIds.map(qName).join(' and ') + '.'
+        });
+        return;
+      }
+      const nowChecked = { ...checked };
+      unlinkedIds.forEach((id) => { nowChecked[id] = true; });
+      this.setState({
+        runState: null, checked: nowChecked,
+        lastResult: 'Checked again: ' + titles + (k === 1 ? ' doesn’t' : ' don’t') + ' fit any of these questions now. ' + (k === 1 ? 'It stays' : 'They stay') + ' in My stories and in the card’s suggestions.'
+      });
+    };
+    const checkNew = (retry) => {
+      const result = outcome(retry);
+      if (result === 'error') { this.setState({ runState: 'error', failedScope: 'new' }); return; }
+      const q5Free = !stories.q5 && !('q5' in override);
+      if (result === 'match' && q5Free) {
+        this.setState({ runState: null, newChecked: true, newLinked: true,
+          lastResult: 'Checked your new story: “Onboarding tutorial A/B test” fits Q5: Experimentation, so it’s linked there.' });
+        return;
+      }
+      this.setState({ runState: null, newChecked: true,
+        lastResult: 'Checked your new story: it doesn’t fit any question that still needs a story. It stays in My stories.' });
+    };
+    // A retry repeats the check that failed; in this mockup it succeeds so the recovered state can be seen.
+    const retry = () => {
+      if (loadFailed) { this.setState({ loadFixed: true, runState: null }); return; }
+      if (this.state.failedScope === 'new') checkNew(true); else checkUnlinked(true);
+    };
+    const pendingRows = failed ? [] : [
+      ...(k ? [{ text: 'You unlinked ' + k + (k === 1 ? ' story' : ' stories') + '. Check whether ' + (k === 1 ? 'it still fits' : 'they still fit') + ' a question.', label: 'Match again', run: () => checkUnlinked(false) }] : []),
+      ...(newPending ? [{ text: 'You added 1 story since the last match.', label: 'Match new story', run: () => checkNew(false) }] : [])
+    ];
+    const highlight = !consented && this.state.pending !== null;
+    return {
+      theme, questions, consented, needsConsent: !consented, highlight,
+      pendingN: this.state.pending,
+      bankLine, failed, notFailed: !failed,
+      stripStyle: failed
+        ? 'color: var(--warnText); background: var(--warnBg); border: 1px solid var(--warnLine)'
+        : 'color: var(--muted); border: 1px solid var(--line)',
+      pendingRows,
+      showAddFirst: bank === 'none' && !k && !failed,
+      retry,
+      bannerClass: highlight ? 'consent-hl hl-' + (this.state.hlKey % 2) : '',
+      bannerStyle: highlight
+        ? 'border: 2px solid var(--hlLine); background: var(--hlBg)'
+        : 'border: 1px solid var(--line); background: var(--sub)',
+      agreeLabel: highlight ? 'I agree, start Q' + this.state.pending : 'I agree, let me practise',
+      readyLine: this.state.pending
+        ? 'You’re set to record. Starting Q' + this.state.pending + ': answer out loud, and you’ll get one follow-up, then feedback.'
+        : 'You’re set to record. Press Practise on any question, answer out loud, and you’ll get one follow-up, then feedback.',
+      setBanner: (el) => { this.banner = el; },
+      agree: () => this.setState({ agreed: true })
+    };
+  }
+}
+</script>
+</body>
+</html>

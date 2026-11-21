@@ -22,3 +22,8 @@
 - **What:** Added `synthesis/` (merged personas, JTBD and prioritisation in `01_personas-jtbd-and-prioritisation.md`, plus its `instructions.md` and `log.md`). Added it to the folder map in `instructions.md` and to `README.md`.
 - **Why:** Assignment 2: finalise team personas and JTBD from all 25 interviews, and pick a primary persona that fits our 8–10 h prototype budget.
 - **Files:** `synthesis/` (3 files), `instructions.md`, `README.md`, `log.md`
+
+## 2026-11-21: Addyant via Claude Code
+- **What:** Added `design/` (merged question cards proposal for the role page, with its own `instructions.md` and `log.md`) and listed it in the folder map in `instructions.md`.
+- **Why:** Propose merging "Questions to practise" and "What this role tests" into one card per question.
+- **Files:** `design/` (4 files), `instructions.md`, `log.md`
