@@ -28,7 +28,7 @@ MVP hypothesis metrics (deck slide 14, "Measured by"): ≥60% retry after feedba
 - **Company-specific question banks**: Arjun's problem, later (8 of 25).
 - **Calendar sync, full task manager**: prep list stays light (problem E is "in scope (light)").
 - **Peer or alumni matching**: the product replaces the scarce partner, it does not broker one.
-- **Scores, leaderboards, payments, native app**: no gamification or monetisation in MVP1; web only.
+- **Scores, leaderboards, payments, native app**: no gamification or monetisation in MVP1; web only. *Changed 2026-11-21 (team decision):* one exception, a **personal prep streak** (Module 5 below), private to the user, with no points, no leaderboard and no notifications.
 - **Technical rounds (DSA, finance technicals)**: already served by LeetCode and prep books.
 - **Rewriting the user's answer or story** (product principle, not only an MVP cut): the AI asks and points, it does not rewrite.
 - **Accounts / sign-up / email nudges** in MVP1 (deck: "no sign-up, no nudges"). Identity is an anonymous browser session plus a resume link.
@@ -70,6 +70,14 @@ Grouped by deck module. IDs match the deck's feature IDs (MF, SB, SD, PL) so tes
 ### Module 4: Prep list, light (PL1–PL2)
 - US-4.1 (PL1) As Abhinav, given an interview date and JD, I want 3–5 stories and questions to rehearse in 20-minute blocks so that I know what to do in the gaps between case prep.
 - US-4.2 (PL2) As Abhinav, I want the list to update as I mark stories ready so that it reflects my progress.
+
+### Module 5: Prep streak (ST1–ST3), added 2026-11-21
+Why: S5 "Products that stick" (habit, Duolingo streak); "once you lose touch, it's very hard to get it back" (ROH-4); progress must feel worth the time (ADD-4); the persona leaves a product that nags (SUR-1, SAM-1, SRI-1), so the streak is forgiving and silent.
+- US-6.1 (ST1) As Abhinav, I want any prep action on a day (adding a JD, a story, recording, feedback, marking a story ready) to keep my streak going, so that consistency, not only big sessions, is visible.
+- US-6.2 (ST2) As Abhinav, I want one missed day a week forgiven automatically, so that a case-heavy day does not cost me the streak.
+- US-6.3 (ST3) As Abhinav, if I miss more days (up to 3), I want to revive my streak by doing one practice rep per lost day (feedback on an answer, a story marked ready, or a gap filled) by the end of the day after I come back, so that extra prep makes up for the lost days.
+- US-6.4 (ST4) As Abhinav, I want my interview date to be a milestone in the streak (the days I prepped on the way to it, the interview day marked, and how many days I prepped once it has passed), and I want the interview day itself never to break my streak.
+- Acceptance: days follow the user's own timezone; automatic page views do not count; the streak is derived from server-side events (nothing stored, nothing the browser can fake); no notifications. Rules and constants: `app/src/modules/streak/README.md`.
 
 ### Platform / operators
 - US-5.1 As a teammate-reviewer, I want to read every feedback point for the first five users beside the transcript so that I can catch wrong or invented feedback before it misleads someone.

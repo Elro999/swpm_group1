@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { StreakChip } from "@/components/streak/StreakChip";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,6 +36,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               Interview Prep Companion
             </Link>
             <div className="flex items-center gap-4 text-sm">
+              <Suspense fallback={null}>
+                <StreakChip />
+              </Suspense>
               <Link href="/stories" className="text-zinc-700 hover:underline dark:text-zinc-300">
                 My stories
               </Link>
