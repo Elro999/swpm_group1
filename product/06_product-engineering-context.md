@@ -42,6 +42,7 @@
 | Matching | "Match my stories to this role": each competency → best story with a verbatim "why it fits" quote, or a **Gap**. Editing a story resets its matches to gaps | **Live** |
 | Gaps | Gap prompts: 3–5 questions quoting lines of the user's CV; the typed answer becomes a draft story that fills the gap | **Live** (typed; voice answers to gap prompts not built) |
 | Prep | Prep list: 3–5 blocks of 20 minutes, spread over the days until the interview date; rebuilt from current state | **Live** |
+| Streak | Prep streak (branch `feature/streaks`, 2026-11-21): any prep action counts for the day (user's timezone); one rest day per Mon–Sun week; a break of up to 3 days can be revived with one practice rep per lost day by the end of the next day. Header chip, hub card (week strip, interview countdown, revive offer, today's rep), confirmation on the feedback screen. Derived from events, no table, no notifications | **Built** (not yet merged or deployed) |
 | Privacy | `/privacy` page, "delete my data" (removes rows and recordings), 30-day audio retention job (daily, 03:00 UTC) | **Live** |
 | Team | `/admin` (needs `ADMIN_KEY`): review queue of transcripts and feedback, North Star metrics (first feedback within 5 minutes, retry after feedback, stories marked ready, gaps filled) | **Live** |
 | Limits | 80 AI calls per session per 24 h; 1,500 AI calls per day site-wide; 60 new sessions per network per hour | **Live** |
