@@ -167,3 +167,12 @@
 - **What:** Confirmed and locked in that the interview date is optional for the streak: with no date, the streak, rest day and revive work as normal and only the countdown and milestone are hidden. Added assertions for this to `e2e/streak.spec.ts` and a line to the streak module README. No behaviour change.
 - **Why:** Sri asked that the streak must not depend on an interview date being entered.
 - **Files:** `app/e2e/streak.spec.ts`, `app/src/modules/streak/README.md`, `log.md`
+
+## 2026-11-22: Suraj via Claude
+- **What:** Fixed two build blockers on `dev/suraj-working` after PRs #2 (streaks) and #3 were merged:
+  - `InterviewHub.tsx` still imported `@/components/ResumeLink`, which `7db60e6` had deleted (left over from the merge). Removed the unused import.
+  - `package-lock.json` was out of sync with `package.json` (missing `@emnapi/runtime`), so `npm ci` refused to install. Regenerated with `npm install`.
+
+  `npm run verify` is green: 194 unit and 28 E2E tests.
+- **Why:** The user asked to test and deploy the latest branch; the build failed before these fixes.
+- **Files:** `app/src/app/i/[id]/InterviewHub.tsx`, `app/package-lock.json`, `log.md`

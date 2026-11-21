@@ -5,7 +5,6 @@ import { ConsentGate } from "@/components/ConsentGate";
 import { DeleteDataButton } from "@/components/DeleteDataButton";
 import { GapDiscovery } from "@/components/GapDiscovery";
 import { MatchStoriesButton } from "@/components/MatchStoriesButton";
-import { ResumeLink } from "@/components/ResumeLink";
 import { StreakCard } from "@/components/streak/StreakCard";
 import { TrackView } from "@/components/TrackView";
 import { ui } from "@/components/ui";
