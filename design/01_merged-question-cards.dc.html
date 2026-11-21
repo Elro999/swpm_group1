@@ -23,6 +23,9 @@ details summary{cursor:pointer}
 @keyframes consentPulseB{0%{box-shadow:0 0 0 0 var(--hlGlow)}70%{box-shadow:0 0 0 12px transparent}100%{box-shadow:0 0 0 0 transparent}}
 .consent-hl.hl-0{animation:consentPulse 1.2s ease-out 3}
 .consent-hl.hl-1{animation:consentPulseB 1.2s ease-out 3}
+.card-hl{outline:2px solid var(--hlLine);outline-offset:2px}
+.card-hl.rk-0{animation:consentPulse 1.2s ease-out 2}
+.card-hl.rk-1{animation:consentPulseB 1.2s ease-out 2}
 </style>
 </helmet>
 <div class="theme-{{ theme }}" style="min-height: 100vh; background: var(--page); color: var(--text); font-family: Geist, system-ui, sans-serif; font-size: 15px; line-height: 1.5">
@@ -101,7 +104,7 @@ details summary{cursor:pointer}
 <h2 style="margin: 4px 0 0; font-size: 18px; font-weight: 600">Questions to practise (5)</h2>
 
 <sc-for list="{{ questions }}" as="item" hint-placeholder-count="5">
-<article style="border: 1px solid var(--line); background: var(--card); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 16px">
+<article ref="{{ item.setRef }}" class="{{ item.cardClass }}" style="border: 1px solid var(--line); background: var(--card); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 16px; scroll-margin: 24px">
 
 <div style="display: flex; flex-direction: column; gap: 10px">
 <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap">
@@ -208,8 +211,14 @@ Unlink this story
 <div style="border: 1px dashed var(--warnLine); background: var(--warnBg); border-radius: 10px; padding: 12px 14px; font-size: 13px; color: var(--warnText)">Gap: nothing on your CV or in your saved stories shows this yet. A small example works too: think of one test you ran, even in a class project, and write it up on <a href="#" style="color: inherit; font-weight: 600">My stories</a>.</div>
 </sc-if>
 
-<div style="display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--line); padding-top: 16px">
-<button class="btn1" onClick="{{ item.practise }}" aria-label="Practise question {{ item.n }}" style="display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 20px; border: 0; border-radius: 8px; background: var(--accent); color: #FFFFFF; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer">
+<div style="display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 10px; border-top: 1px solid var(--line); padding-top: 16px">
+<sc-if value="{{ item.isReturned }}" hint-placeholder-val="{{ false }}">
+<span style="margin-right: auto; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; color: var(--okText)">
+<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+You’re set to record. Press Practise to start.
+</span>
+</sc-if>
+<button class="btn1" data-practise="1" onClick="{{ item.practise }}" aria-label="Practise question {{ item.n }}" style="display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 20px; border: 0; border-radius: 8px; background: var(--accent); color: #FFFFFF; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer">
 <svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0"></path><path d="M12 18v3"></path></svg>
 Practise
 </button>
@@ -262,6 +271,7 @@ class Component extends DCLogic {
     this.state = { agreed: null, open: {}, pending: null, hlKey: 0, picking: {}, override: {}, removed: {},
       runState: null, failedScope: null, newLinked: false, newChecked: false, loadFixed: false, checked: {}, lastResult: null };
     this.banner = null;
+    this.cards = {};
   }
   renderVals() {
     const theme = this.props.theme === 'dark' ? 'dark' : 'light';
@@ -357,6 +367,9 @@ class Component extends DCLogic {
         promptsLabel: (open ? 'Hide' : 'More') + ' prompts from your CV' + (restHasStory ? ' and stories' : '') + ' (' + (total - 1) + ')',
         chevron: open ? 'transform: rotate(90deg)' : '',
         toggle: () => this.setState({ open: { ...this.state.open, [d.id]: !open } }),
+        setRef: (el) => { this.cards[d.id] = el; },
+        isReturned: consented && this.state.returned === i + 1,
+        cardClass: consented && this.state.returned === i + 1 ? 'card-hl rk-' + (this.state.retKey % 2) : '',
         practise: () => {
           if (consented) return;
           this.setState({ pending: i + 1, hlKey: this.state.hlKey + 1 });
@@ -442,12 +455,24 @@ class Component extends DCLogic {
       bannerStyle: highlight
         ? 'border: 2px solid var(--hlLine); background: var(--hlBg)'
         : 'border: 1px solid var(--line); background: var(--sub)',
-      agreeLabel: highlight ? 'I agree, start Q' + this.state.pending : 'I agree, let me practise',
+      agreeLabel: highlight ? 'I agree, back to Q' + this.state.pending : 'I agree, let me practise',
       readyLine: this.state.pending
-        ? 'You’re set to record. Starting Q' + this.state.pending + ': answer out loud, and you’ll get one follow-up, then feedback.'
+        ? 'You’re set to record. We took you back to Q' + this.state.pending + ': press Practise, answer out loud, and you’ll get one follow-up, then feedback.'
         : 'You’re set to record. Press Practise on any question, answer out loud, and you’ll get one follow-up, then feedback.',
       setBanner: (el) => { this.banner = el; },
-      agree: () => this.setState({ agreed: true })
+      // Agreeing from a Practise press takes the user back to that card, highlights it and focuses its Practise button.
+      agree: () => {
+        const n = this.state.pending;
+        this.setState({ agreed: true, returned: n, retKey: (this.state.retKey || 0) + 1 });
+        if (!n) return;
+        setTimeout(() => {
+          const el = this.cards['q' + n];
+          if (!el) return;
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          const btn = el.querySelector('[data-practise]');
+          if (btn) btn.focus({ preventScroll: true });
+        }, 60);
+      }
     };
   }
 }

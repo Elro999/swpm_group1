@@ -42,3 +42,8 @@
 - **What:** Moved the Practise button to the bottom right of each question card.
 - **Why:** Requested placement for the card's main action.
 - **Files:** `01_merged-question-cards.md`, `01_merged-question-cards.dc.html`
+
+## 2026-11-22: Addyant via Claude Code
+- **What:** After consent given from a Practise press, the page scrolls back to that question's card, outlines it, shows a "Press Practise to start" note and moves focus to its Practise button. The consent button now reads "I agree, back to Q<n>".
+- **Why:** Agreeing left the user at the top of the page, so they had to scroll back down to find the question they had chosen.
+- **Files:** `01_merged-question-cards.md`, `01_merged-question-cards.dc.html`
