@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { refreshStreak } from "@/components/streak/useStreak";
+import { StreakToast } from "@/components/streak/StreakToast";
 import { ui } from "@/components/ui";
 import type { AttemptView } from "@/modules/attempt/view";
 import { formatMs } from "@/modules/feedback/transcript";
@@ -30,7 +32,9 @@ export function FeedbackView({ view }: { view: AttemptView }) {
 
   // Record the view server-side (first_feedback_viewed etc.); the server de-duplicates.
   useEffect(() => {
-    void fetch(`/api/attempts/${view.id}/viewed`, { method: "POST" }).catch(() => undefined);
+    void fetch(`/api/attempts/${view.id}/viewed`, { method: "POST" })
+      .then(() => refreshStreak())
+      .catch(() => undefined);
   }, [view.id]);
 
   // Load the user's own recording as a blob so seeking works without range requests.
@@ -104,6 +108,7 @@ export function FeedbackView({ view }: { view: AttemptView }) {
 
   return (
     <section aria-labelledby="feedback-title" className="flex flex-col gap-6" data-testid="feedback">
+      <StreakToast />
       <h2 id="feedback-title" className="text-2xl font-semibold tracking-tight">
         Feedback{view.attemptNo > 1 ? ` · attempt ${view.attemptNo}` : ""}
       </h2>

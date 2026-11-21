@@ -5,6 +5,8 @@ import { ConsentGate } from "@/components/ConsentGate";
 import { DeleteDataButton } from "@/components/DeleteDataButton";
 import { GapDiscovery } from "@/components/GapDiscovery";
 import { MatchStoriesButton } from "@/components/MatchStoriesButton";
+import { ResumeLink } from "@/components/ResumeLink";
+import { StreakCard } from "@/components/streak/StreakCard";
 import { TrackView } from "@/components/TrackView";
 import { ui } from "@/components/ui";
 import { getRepo } from "@/lib/db";
@@ -74,6 +76,8 @@ export async function InterviewHub({ params }: { params: Promise<{ id: string }>
         <h1 className={ui.h1}>{roleTitle(interview.jdText)}</h1>
         {when && <p className={ui.muted}>{when}</p>}
       </div>
+
+      <StreakCard interviewId={interview.id} nextStep={prep.items[0] ? { title: prep.items[0].title, href: prep.items[0].href, minutes: prep.items[0].minutes } : null} />
 
       <section aria-labelledby="questions-title" className="flex flex-col gap-4">
         <h2 id="questions-title" className={ui.h2}>
