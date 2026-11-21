@@ -19,7 +19,7 @@
 2. **Point and ask, never rewrite.** The app never gives users replacement wording or scripts answers. Feedback describes what happened and asks a question.
 3. **Never invent.** No number, name, employer or bigger role that the user didn't state. Stories are stored as verbatim spans of the user's text.
 4. **Measure in code, judge with AI.** Timing, "I vs we" and length are computed from word timestamps; the AI only judges fit (answered the question? showed the competency?).
-5. **Private by default.** No account, no name, no email. Anonymous session via cookie and a private link. Recordings are deleted after 30 days, and "delete my data" works at any time.
+5. **Private by default.** No account, no name, no email. Anonymous session via cookie only (no cross-device link in v1). Recordings are deleted after 30 days, and "delete my data" works at any time.
 6. **Recoverable.** A failed step never makes the user record again; stored data lets them retry the step.
 
 **Goals (PRD, all P0):** G1 first pinned feedback within 5 minutes of landing, no sign-up · G2 every feedback point cites a timestamped line from the user's answer · G3 every JD competency shows a mapped story or a flagged gap · G4 stories restructured decision-first, own vs team actions split · G5 the AI never adds ownership, numbers or outcomes · G6 every retry shows before vs after on the same checks.
@@ -30,7 +30,7 @@
 
 | Area | Feature | Status |
 |---|---|---|
-| Start | Anonymous start, no form; private resume link (`/r/<token>`); "Try with a sample JD" | **Live** |
+| Start | Anonymous start, no form (same-browser cookie; no "continue on another device" in v1); "Try with a sample JD" | **Live** |
 | Job set-up | Paste a JD (plus optional CV and interview date) → 4–6 competencies, each with a JD quote → 3–5 behavioural questions, each with a JD quote | **Live** |
 | Practice | Consent notice → record an answer (max ~3 min) → transcript with word timings | **Live** |
 | Practice | One follow-up question quoting the vaguest phrase; answer it by voice or skip | **Live** |

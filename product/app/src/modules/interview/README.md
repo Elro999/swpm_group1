@@ -11,15 +11,19 @@
 4. On success it records `interview_added` with counts only (`competencies`, `questions`, `dropped_quotes`, `has_cv`, `has_date`). Every model call is logged via `withAiCall`.
 5. If storing fails half-way, the interview is deleted (compensation), so there is never a partial interview.
 
+## JD or CV from a PDF
+`POST /api/interviews/pdf-text` takes the raw PDF bytes, `extractPdfText` (`pdf.ts`, `unpdf`) returns the text, and the form drops it into the JD box ("Upload a PDF instead") or the CV box ("Upload your CV as a PDF") for the user to review and edit. The CV is optional and still capped at 20,000 characters after extraction. The PDF is **not stored**. Limits: real `%PDF` file, ≤ 5 MB, ≤ 10 pages, must contain selectable text (scans and password-protected files get a plain "paste the text instead" message). Nothing downstream changes: the text goes through the same validation and quote verification as a pasted JD.
+
 ## Files
 | File | Role |
 |---|---|
+| `pdf.ts` | PDF → text for the upload button, with plain error messages |
 | `validation.ts` | Form rules and messages |
 | `verify.ts` | Deterministic checks on model output |
 | `service.ts` | `createInterview`: generate → verify → retry → store → event |
-| `format.ts` | `roleTitle` (first JD line) and `describeInterviewDate` ("in 18 days") |
+| `format.ts` | `roleTitle` (rule-based title: labelled line → "we are hiring a …" → first short line with a role word → first non-header line; no model call) and `describeInterviewDate` ("in 18 days") |
 
 ## Where it is used
 `POST /api/interviews` (`src/app/api/interviews/route.ts`) · `/interviews/new` form · hub `/i/[id]` (`src/app/i/[id]/InterviewHub.tsx`) · landing `ContinueList`.
 
-**Tests:** `interview.test.ts` (validation, verifiers with fabricated quotes, retry, clean failure), `format.test.ts`, `e2e/phase1-interview-setup.spec.ts`.
+**Tests:** `interview.test.ts` (validation, verifiers with fabricated quotes, retry, clean failure), `format.test.ts`, `pdf.test.ts`, `e2e/pdf-upload.spec.ts`, `e2e/phase1-interview-setup.spec.ts`.

@@ -25,6 +25,18 @@ export async function postJson<T = Record<string, unknown>>(url: string, body?: 
   return { ok: res.ok, status: res.status, data };
 }
 
+/** Upload a PDF as the raw request body (like audio); the server answers with JSON. */
+export async function postPdf<T = Record<string, unknown>>(url: string, file: File): Promise<ApiResult<T>> {
+  const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/pdf" }, body: file });
+  let data: ApiResult<T>["data"];
+  try {
+    data = await res.json();
+  } catch {
+    data = { error: "Unexpected response from the server." } as ApiResult<T>["data"];
+  }
+  return { ok: res.ok, status: res.status, data };
+}
+
 /** Creates an anonymous session if the visitor has none (idempotent). */
 export async function ensureSession(): Promise<boolean> {
   const r = await postJson("/api/session/start");

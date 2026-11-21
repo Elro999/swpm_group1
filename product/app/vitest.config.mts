@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 
@@ -9,6 +10,6 @@ export default defineConfig({
     environment: "node",
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
     // `server-only` throws outside a React Server environment; unit tests import server modules directly.
-    alias: { "server-only": new URL("./src/test/server-only-stub.ts", import.meta.url).pathname },
+    alias: { "server-only": fileURLToPath(new URL("./src/test/server-only-stub.ts", import.meta.url)) }, // fileURLToPath: .pathname breaks on Windows
   },
 });

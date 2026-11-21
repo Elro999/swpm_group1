@@ -1,8 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Security headers for every route. no-referrer matters: resume links carry the session token
-  // in the path (/r/<token>), and must never leak through the Referer header.
+  // Security headers for every route. no-referrer keeps our URLs (interview ids) out of the Referer header.
   async headers() {
     return [
       {

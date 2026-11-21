@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { SAMPLE_JD } from "../src/lib/sample";
 
-// Phase 1: landing → add interview (sample JD) → hub with JD-grounded questions → consent gate → resume.
+// Phase 1: landing → add interview (sample JD) → hub with JD-grounded questions → consent gate → same-browser return.
 // Runs in mock AI + memory mode (see playwright.config.ts).
 
 async function createSampleInterview(page: Page): Promise<string> {
@@ -53,11 +53,10 @@ test("recording controls stay hidden until the user agrees, and consent persists
   await expect(page.getByRole("button", { name: "I agree, let me practise" })).toHaveCount(0);
 });
 
-test("another visitor cannot open my interview, but my private link brings it to a new device", async ({ page, browser }) => {
+test("another visitor cannot open my interview, and there is no 'continue on another device' link (v1)", async ({ page, browser }) => {
   const hubUrl = await createSampleInterview(page);
-  await page.getByText("Continue on another device").click();
-  const resumeUrl = await page.getByLabel("Your private link").inputValue();
-  expect(resumeUrl).toMatch(/\/r\/[A-Za-z0-9_-]{43}$/);
+  await expect(page.getByText("Continue on another device")).toHaveCount(0);
+  await expect(page.getByLabel("Your private link")).toHaveCount(0);
 
   const stranger = await browser.newContext();
   const strangerPage = await stranger.newPage();
@@ -66,13 +65,11 @@ test("another visitor cannot open my interview, but my private link brings it to
   await expect(strangerPage.getByTestId("question-list")).toHaveCount(0);
   await stranger.close();
 
-  const otherDevice = await browser.newContext();
-  const devicePage = await otherDevice.newPage();
-  await devicePage.goto(resumeUrl);
-  await expect(devicePage.getByRole("heading", { name: "Continue where you left off" })).toBeVisible();
-  await devicePage.getByRole("link", { name: /Associate Product Manager, Payments/ }).first().click();
-  await expect(devicePage.getByTestId("question-list")).toBeVisible();
-  await otherDevice.close();
+  // Same browser (cookie) still gets back to its own work.
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Continue where you left off" })).toBeVisible();
+  await page.getByRole("link", { name: /Associate Product Manager, Payments/ }).first().click();
+  await expect(page.getByTestId("question-list")).toBeVisible();
 });
 
 test("privacy page explains storage, processing and retention, marked as a draft", async ({ page }) => {
