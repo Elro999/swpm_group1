@@ -37,3 +37,8 @@
 - **What:** Expanded engineering note 2: save CV prompts per competency, give Build story links IDs only (interview, question, prompt), and look the text up on the server.
 - **Why:** Each Build story link must open My stories for its own question and CV line, without putting user text in URLs, browser history or logs.
 - **Files:** `01_merged-question-cards.md`
+
+## 2026-11-22: Addyant via Claude Code
+- **What:** Moved the Practise button to the bottom right of each question card.
+- **Why:** Requested placement for the card's main action.
+- **Files:** `01_merged-question-cards.md`, `01_merged-question-cards.dc.html`

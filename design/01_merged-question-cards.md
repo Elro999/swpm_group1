@@ -20,7 +20,7 @@ One section, one card per question. Each card holds everything for that question
 | After unlinking | The story returns to the card's suggestions as a **Saved story** row with **Use this story**: right after the top CV prompt (inside "More prompts from your CV and stories"), or as the top suggestion when the card has no CV prompt. The story bank strip shows **Match again**; if the story still fits, matching links it back |
 | CV prompts | 0–4 prompts filled in on load (no click). Only the most relevant one shows; the rest sit under **More prompts from your CV (N)**, collapsed. Each prompt quotes the CV line and asks a question; **Build story →** goes to My stories |
 | No prompts and no story | Amber **Gap** note with a link to My stories |
-| Practise | Always visible. Before consent, pressing it scrolls to the consent banner and highlights it in indigo ("One step before Q3", button "I agree, start Q3") |
+| Practise | Bottom right of the card, always visible. Before consent, pressing it scrolls to the consent banner and highlights it in indigo ("One step before Q3", button "I agree, start Q3") |
 
 Page level:
 - **Consent banner** at the top (short, with the details in a fold-out); turns into a green "You're set to record" line after consent.
