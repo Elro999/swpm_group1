@@ -121,3 +121,8 @@
 - **What:** Made the interview date a **milestone** in the prep streak (branch `feature/streaks`). `computeStreak` now takes the session's interviews and returns `milestones`: the road from adding an interview to the day before it (days prepped of days so far, with a dot track of up to 21 days), and `upcoming` / `today` / `done` status ("Milestone reached: you prepped 10 of 12 days before this interview"). The interview day never breaks the streak and does not use the weekly rest day. The hub card shows the hub's own interview as a milestone (`MilestoneTrack.tsx`) and marks the interview day in the week strip. PRD ST4 added; module README, doc 06 and `STATUS.md` updated. Tests: 6 more unit, 1 more E2E; `npm run verify` green (182 unit, 26 E2E).
 - **Why:** Sri asked to add the interview date as a milestone in the streak setup.
 - **Files:** `app/src/modules/streak/{streak.ts,streak.test.ts,README.md}`, `app/src/app/api/streak/route.ts`, `app/src/components/streak/{StreakCard.tsx,StreakIcons.tsx,MilestoneTrack.tsx}`, `app/src/app/i/[id]/InterviewHub.tsx`, `app/e2e/streak.spec.ts`, `01_prd.md`, `06_product-engineering-context.md`, `STATUS.md`, `log.md`
+
+## 2026-11-21: Sri via Claude
+- **What:** Confirmed and locked in that the interview date is optional for the streak: with no date, the streak, rest day and revive work as normal and only the countdown and milestone are hidden. Added assertions for this to `e2e/streak.spec.ts` and a line to the streak module README. No behaviour change.
+- **Why:** Sri asked that the streak must not depend on an interview date being entered.
+- **Files:** `app/e2e/streak.spec.ts`, `app/src/modules/streak/README.md`, `log.md`

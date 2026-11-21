@@ -19,6 +19,9 @@ test("adding an interview starts the streak; feedback confirms the day", async (
   const card = page.getByTestId("streak-card");
   await expect(card).toHaveAttribute("data-status", "active_today");
   await expect(card.getByRole("heading", { name: "1-day streak" })).toBeVisible();
+  // No interview date was entered: the streak works, with no countdown and no milestone.
+  await expect(card).not.toContainText("to your interview");
+  await expect(card.getByTestId("streak-milestone")).toHaveCount(0);
   await expect(card).toContainText("Today counts.");
   await expect(card.getByTestId("streak-rest")).toHaveText("1 rest day left this week");
   await expect(card.getByTestId("streak-week")).toHaveText("This week: 1 prep day · 0 practice reps");

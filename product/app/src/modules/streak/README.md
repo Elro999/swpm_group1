@@ -9,6 +9,7 @@
 - **Revive:** any further missed day breaks the run. If the gap is at most `MAX_REVIVE_DAYS` (3) unforgiven days, the user can bring the run back: come back (any action starts the comeback) and do one **practice rep** per lost day by the end of the next day (`REVIVE_EXTRA_DAYS` = 1). Practice reps (`PRACTICE_REPS`) are `feedback_viewed` (once per attempt), `story_marked_ready` and `gap_story_filled`, so a revive costs real prep. If the window closes, the old run is dropped and the comeback run continues.
 - **The number** is the count of days with prep in the current run. Rest and revived days bridge the run but do not add to it.
 - **Interview milestones** (added 2026-11-21): every interview with a date is a milestone (`milestones`, soonest first).
+  - The date is optional. Without one, the streak, rest day and revive work exactly the same; only the countdown and the milestone section are hidden (tested in `e2e/streak.spec.ts`).
   - The interview day never breaks the streak: if it has no prep it is free (`interview` day state) and the weekly rest day is kept.
   - The road to it runs from the day the interview was added to the day before it: `windowDays`, `elapsedDays` (today joins only once it has prep), `preppedDays`, and a `track` of the last `MILESTONE_TRACK_DAYS` (21) days.
   - `status` is `upcoming`, `today` (send-off with the tally) or `done` ("Milestone reached: you prepped 10 of 12 days before this interview"). The interview day is also marked in the week strip.
