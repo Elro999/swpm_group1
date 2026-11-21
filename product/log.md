@@ -141,3 +141,9 @@
 - **Why:** The user asked for a CV upload option alongside the JD upload.
 - **Not done:** privacy page still doesn't mention PDF handling; image-only PDFs (including CVs) still need OCR (see `STATUS.md`).
 - **Files:** `app/src/app/interviews/new/NewInterviewForm.tsx`, `app/src/app/api/interviews/pdf-text/route.ts` (renamed from `jd-pdf`), `app/src/modules/interview/{pdf.ts,README.md}`, `app/e2e/{pdf-upload.spec.ts,fixtures/make-pdf.ts}`, `app/README.md`, `02_capability-and-architecture.md`, `STATUS.md`, `log.md`
+
+## 2026-11-21: Samyak via Claude
+- **What:** Added `Local setup guide.md`, a step-by-step guide to clone, run, configure `.env.local`, test and avoid known traps, written so a fresh AI coding agent or teammate can follow it. Written by the user; committed as provided.
+- **Why:** The user asked for it to be committed to their branch so others can set up locally.
+- **Notes:** The guide's own prompt points to `product/07_local-setup-guide.md`, but the file is named `Local setup guide.md`. Its test counts (161 unit, 23 E2E) and the "private link stops working" line predate the changes in PR #3 (now 173 unit, 25 E2E; no private link). Not edited here.
+- **Files:** `Local setup guide.md`, `log.md`
