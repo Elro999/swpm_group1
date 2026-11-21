@@ -176,3 +176,9 @@
   `npm run verify` is green: 194 unit and 28 E2E tests.
 - **Why:** The user asked to test and deploy the latest branch; the build failed before these fixes.
 - **Files:** `app/src/app/i/[id]/InterviewHub.tsx`, `app/package-lock.json`, `log.md`
+
+## 2026-11-22: Suraj via Claude
+- **What:** Deployed `dev/suraj-working` at `1634568` to Vercel production (deployment `ils8jw71x`, aliased to https://interview-prep-companion.vercel.app) with the Vercel CLI, from a clean checkout matching GitHub. The live site now includes the streaks feature (PR #2), PDF upload for the JD and CV, the rule-based role title, and the removal of the resume link (PR #3). Live check passed: interview generation, transcription, follow-up, feedback (3 points), double-click lock (one 200 + one 409), no stuck AI reservations, retention route (401 without the secret, 200 with it), and delete-my-data. No new migrations or env vars were needed.
+- **Why:** The user asked to test and deploy the latest branch.
+- **Not done:** Vercel is still not Git-connected (deploys are manual via the CLI). Previous production deployment `j5cywz05k` (14 Nov) is available for rollback.
+- **Files:** `log.md` (and the remote Vercel deployment)
