@@ -1,213 +1,302 @@
 # Local setup guide (for a new Claude instance or teammate)
 
-*How to clone the project, run it locally, configure `.env.local`, test, and avoid the known traps. Written so an AI coding agent can follow it step by step. Last checked: 21 Nov 2026.*
+*How to get the project onto your machine, choose the right branch, fill in `.env.local`, run and test it, and avoid the known traps. Written so an AI coding agent can follow it step by step, asking the human at each decision. Last checked: 22 Nov 2026.*
 
 > **Prompt for a fresh Claude session:**
-> "Clone https://github.com/Elro999/swpm_group1, then read and follow `product/07_local-setup-guide.md`. Start in mock mode, run `npm run verify`, and tell me when it's green. Don't ask me to paste any keys into chat."
+> "Clone https://github.com/Elro999/swpm_group1 into a folder I choose, then read and follow `product/07_local-setup-guide.md`. Ask me before choosing or creating a branch, and never ask me to paste keys into chat."
 
 ---
 
 ## 0. Rules before you touch anything
 
-1. **Read in this order:** `CLAUDE.md` → `instructions.md` (repo root) → `product/instructions.md` → `product/STATUS.md` → `product/06_product-engineering-context.md`. Then the `README.md` of any module you change (`product/app/src/modules/<name>/README.md`).
-2. **Logs are append-only.** Every change gets a new entry at the bottom of that folder's `log.md`; never edit old entries.
-3. **Secrets never go in chat, code, commits or logs.** Keys live only in `product/app/.env.local` (git-ignored) and in Vercel's settings. An agent must **never ask the user to paste a key into chat**. Instead, create the file with blank values and ask the user to fill them in themselves (see §4).
-4. **Privacy:** never copy real interviewee names or IDs from `research/` or the Assignment 2 deck into the product, docs or test data.
-5. **Branches:** work on your own branch (`dev/<your-name>-working`). Commit or push only when the human asks.
+1. **Ask, don't assume.** Ask the human before choosing a branch, creating one, switching to live mode, or touching a shared database.
+2. **Read in this order** once the code is on disk: `CLAUDE.md` → `instructions.md` (repo root) → `product/instructions.md` → `product/STATUS.md` → `product/06_product-engineering-context.md`. Then the `README.md` of any module you change (`product/app/src/modules/<name>/README.md`).
+3. **Logs are append-only.** Every change gets a new entry at the bottom of that folder's `log.md`; never edit old entries.
+4. **Secrets never go in chat, code, commits or logs.** Keys live only in `product/app/.env.local` (git-ignored) and in Vercel's settings. The human pastes them into the file themselves (§5).
+5. **Privacy:** never copy real interviewee names or IDs from `research/` or the Assignment 2 deck into the product, docs or test data.
+6. **Commit or push only when the human asks.**
 
-## 1. Prerequisites
+## 1. How it runs online vs on your machine
 
-| Tool | Version | Check |
+The same code runs in both places; only **where its settings come from** changes.
+
+| | Online (the live site) | On your machine |
 |---|---|---|
-| Git | any recent | `git --version` |
-| Node.js | **≥ 20.9** (built and tested on 25.8) | `node -v` |
-| npm | comes with Node | `npm -v` |
-| Google Chrome | for manual testing (the E2E tests install their own Chromium) | — |
+| Where it runs | Vercel, Mumbai region (`bom1`), https://interview-prep-companion.vercel.app | `npm run dev` on http://localhost:3000 |
+| Where keys and settings live | Vercel project → Settings → Environment Variables (stored hidden) | `product/app/.env.local` on your disk (never committed) |
+| AI | OpenAI (language model + Whisper speech-to-text), using the key stored in Vercel | **Mock AI by default** (free, scripted); real OpenAI only if you add a key and set `AI_MODE=live` |
+| Data | Supabase (Postgres + private `audio` file storage), Mumbai | **In-memory by default** (wiped on restart); a Supabase project only if you add its URL and key |
+| How it gets updated | Someone with Vercel access runs `npx vercel deploy --prod` from `product/app`. Pushing to GitHub does **not** deploy | You edit code; the dev server reloads |
 
-**nvm trap:** if Node was installed with nvm, a new terminal (or a Claude tool's shell) may not have `node`/`npx` on its PATH ("command not found: npx"). Fix it for that shell:
+The variable names are the same in both places (`AI_MODE`, `OPENAI_API_KEY`, `SUPABASE_URL`, …). `.env.local` is the local copy of what Vercel holds online, and you only need the parts for the mode you want.
+
+## 2. Check the tools are installed
+
+Run these and fix anything missing before going further:
+
+```bash
+git --version
+node -v        # must be 20.9 or newer (built and tested on 25.8)
+npm -v
+```
+
+| Missing | Install |
+|---|---|
+| Git | macOS: `xcode-select --install`; Windows: git-scm.com |
+| Node.js + npm | nodejs.org (LTS), or `nvm install --lts` |
+| Chrome | Recommended for manual testing; the automated tests install their own browser |
+
+**nvm trap:** if Node was installed with nvm, a new terminal (or a Claude tool's shell) may say `command not found: npx`. Fix it for that shell:
 ```bash
 export PATH="$HOME/.nvm/versions/node/$(ls $HOME/.nvm/versions/node | tail -1)/bin:$PATH"
 ```
 or run `nvm use` if your shell loads nvm.
 
-## 2. Get the code
+## 3. Get the code and choose a branch
 
+**3.1 Clone** (ask the human which folder to clone into):
 ```bash
 git clone https://github.com/Elro999/swpm_group1.git
 cd swpm_group1
-git fetch origin
-git checkout dev/suraj-working        # latest product code until it is merged into main
-git checkout -b dev/<your-name>-working
+git fetch --all --prune
 ```
-Once `dev/suraj-working` has been merged, branch from `main` instead.
+If the repo is already on the machine, `cd` into it and run `git fetch --all --prune` instead.
 
-## 3. Install
+**3.2 Find where the latest working code is.** Don't assume it's on `main`, or on any particular branch. Look first:
+```bash
+# every branch, newest commit first, with date, author and message
+git for-each-ref --sort=-committerdate refs/remotes/origin \
+  --format='%(committerdate:short)  %(refname:short)  %(authorname)  %(subject)'
+
+# does a branch contain the app, and what changed recently?
+git ls-tree -d --name-only origin/main product/app
+git log --oneline -8 origin/<branch>
+
+# how far a branch is ahead of / behind main
+git rev-list --left-right --count origin/main...origin/<branch>
+```
+
+**3.3 Tell the human what you found, then ask.** Summarise in a few lines:
+- which branches exist, and the date and message of their latest commit;
+- which branches contain `product/app/` (the web app);
+- how far each is ahead of or behind `main`, and whether `main` already has the app.
+
+Give a suggestion, for example "`main` has the app and is up to date, so start there", or "`<branch>` is 12 commits ahead of `main` and holds the newest app code". Then ask: **"Which branch should I start from?"**
+
+**3.4 Ask how they want to work:**
+- **Just run or test it:** check out the chosen branch and stay on it:
+  ```bash
+  git checkout <branch>        # e.g. main
+  git pull
+  ```
+- **Develop changes:** ask **"What should I call your working branch?"** (suggest `dev/<your-name>-working`), then create it from the chosen branch:
+  ```bash
+  git checkout <branch> && git pull
+  git checkout -b <new-branch-name>
+  ```
+
+All the setup below happens on whichever branch you end up on. If you switch branches later, rerun `npm ci` (dependencies may differ); `.env.local` stays where it is.
+
+## 4. Install dependencies
 
 ```bash
 cd product/app
-npm ci                                # exact versions from package-lock.json
-npx playwright install chromium       # browser for the E2E tests (one-off, ~150 MB)
+npm ci                                # exact versions from package-lock.json (use `npm install` only if ci fails)
+npx playwright install chromium       # browser for the automated E2E tests (one-off, ~150 MB)
 ```
+If `product/app/` doesn't exist, the branch has no app code. Go back to §3.3 and pick another branch.
 
-## 4. `.env.local`: how it works and how to fill it
+## 5. Set up `.env.local`
 
-**What it is:** `product/app/.env.local` holds this machine's settings and secrets. Next.js loads it automatically for `npm run dev`, `npm run build` and `npm start`. It is git-ignored (`.env*` except `.env.example`), so it never reaches GitHub or Vercel. Vercel keeps its own copy of the production values in its project settings.
+### 5.1 Decide what you need
 
-**Rules for how it is read:**
-- **You don't need it at all for mock mode.** With no `.env.local`, the app runs with mock AI and in-memory data.
-- **Restart the server** after editing it; values are read at start-up.
-- **Real environment variables win:** a variable already set in the shell (or in the Playwright config) overrides `.env.local`. This is why the E2E tests always run in mock mode, even when `.env.local` holds live keys.
-- **Empty means unset:** `OPENAI_API_KEY=` counts as not set.
-- **Bad values stop the server:** a missing required key (for example live mode without `OPENAI_API_KEY`) stops the server with a message that names the variable but never prints any value.
+| Setup | What it does | Keys needed | Use it for |
+|---|---|---|---|
+| **A. Mock + memory** (default) | Scripted AI, data in memory | **None**; you can skip `.env.local` | Most development, UI work, tests. Free |
+| **B. Live AI + memory** | Real OpenAI, data in memory | `OPENAI_API_KEY` | Checking real questions, follow-ups and feedback. A few cents per practice round |
+| **C. Live AI + Supabase** | Real OpenAI and a real database | `OPENAI_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Database or storage work, delete-my-data, retention |
 
-**Create it:**
+Ask the human which one they want. If unsure, start with **A**: it needs nothing and everything runs.
+
+### 5.2 Create the file from the template (agent does this)
+
 ```bash
 cd product/app
 cp .env.example .env.local
 chmod 600 .env.local                  # readable only by you
 ```
+The agent then sets the mode lines for the chosen setup and generates the two local-only passwords, writing them straight into the file without printing them:
+```bash
+sed -i.bak "s/^ADMIN_KEY=.*/ADMIN_KEY=$(openssl rand -hex 16)/" .env.local && rm .env.local.bak
+grep -q '^CRON_SECRET=' .env.local || echo "CRON_SECRET=$(openssl rand -hex 24)" >> .env.local
+```
 
-**Variables:**
+### 5.3 The human pastes the team's keys (agent guides, never sees them)
 
-| Variable | Needed when | Value / where to get it |
-|---|---|---|
-| `AI_MODE` | always (default `mock`) | `mock` = scripted AI, free, no keys. `live` = real OpenAI calls (costs money). |
-| `DATA_MODE` | always (default `memory`) | `memory` = data in the server's memory, lost on restart. `supabase` = real database and file storage. |
-| `LLM_PROVIDER` / `STT_PROVIDER` | live mode | `openai` (the only one implemented). |
-| `OPENAI_API_KEY` | `AI_MODE=live` | platform.openai.com → API keys. Ask the project owner for a team key, or use your own. |
-| `SUPABASE_URL` | `DATA_MODE=supabase` | Supabase dashboard → Project Settings → API (looks like `https://<ref>.supabase.co`). |
-| `SUPABASE_SERVICE_ROLE_KEY` | `DATA_MODE=supabase` | Same page, the **secret / service_role** key (not anon or publishable). Server-only; bypasses all database security, so guard it. |
-| `ADMIN_KEY` | to use `/admin` locally | Any random string of 16+ characters: `openssl rand -hex 16`. |
-| `CRON_SECRET` | to test `/api/cron/retention` | Random string: `openssl rand -hex 24`. Unset = the route returns 503. |
-| `LLM_MODEL_JUDGE` / `LLM_MODEL_FAST` | optional | Override the default models (`gpt-6.1-sol` / `gpt-6-luna`). |
-| `AI_GLOBAL_DAILY_LIMIT` | optional | Site-wide AI calls per 24 h (default 1500). |
-| `SESSION_STARTS_PER_HOUR` | optional | New sessions per network per hour (default 60). Locally every request counts as one network, so raise it if you create many sessions while testing. |
-| `ANTHROPIC_API_KEY`, `DEEPGRAM_API_KEY` | not used | Placeholders for providers that aren't implemented. |
-| `VERCEL_OIDC_TOKEN` | never set by hand | `vercel link` adds it automatically; harmless. |
+Your team keeps the real values (OpenAI key, Supabase URL and service-role key) somewhere private, such as a password manager or a direct message from the project owner. The agent's instruction to the human is:
 
-**How an AI agent should handle secrets:**
-1. Generate non-secret values itself (`ADMIN_KEY`, `CRON_SECRET`) with `openssl` and write them straight into the file, without printing them.
-2. Leave `OPENAI_API_KEY` and `SUPABASE_SERVICE_ROLE_KEY` blank, then tell the human: "Open `product/app/.env.local` and paste your keys after the `=`."
-3. Check the result without revealing values, for example:
-   ```bash
-   for k in OPENAI_API_KEY SUPABASE_SERVICE_ROLE_KEY; do v=$(grep -E "^$k=" .env.local | cut -d= -f2-); echo "$k length=${#v}"; done
-   ```
+> "Open `product/app/.env.local` in your editor. For each line below that ends in `=` with nothing after it, paste the value from your team's shared secrets right after the `=` (no spaces, no quotes), then save."
 
-### Pick a setup
+For setup C, the filled-in file looks like this (values shown as `…`):
+```dotenv
+# --- Modes ---
+AI_MODE=live
+DATA_MODE=supabase
+STT_PROVIDER=openai
 
-| Setup | `.env.local` | Use it for | Cost / risk |
-|---|---|---|---|
-| **A. Mock + memory** (default) | none needed | Almost all development, UI work, tests | Free; nothing leaves your machine |
-| **B. Live AI + memory** | `AI_MODE=live`, `LLM_PROVIDER=openai`, `STT_PROVIDER=openai`, `OPENAI_API_KEY` | Checking real AI quality (questions, follow-ups, feedback) | A few cents per practice round; data lost on restart |
-| **C. Live AI + Supabase** | setup B, plus `DATA_MODE=supabase`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Testing database or storage code, migrations, retention, delete-my-data | Writes real rows and files |
+# --- Supabase ---
+SUPABASE_URL=https://…….supabase.co        ← paste
+SUPABASE_SERVICE_ROLE_KEY=sb_secret_……      ← paste (the secret/service_role key, not anon/publishable)
 
-**Use your own Supabase project for setup C.** The project behind the live site (`interview-prep-companion`) **is production**: test rows there show up in `/admin` metrics and count toward the site-wide AI cap. To create your own:
-1. Create a free Supabase project (any region; Mumbai `ap-south-1` matches production).
-2. In the SQL editor, run the migrations **in order**: `product/app/supabase/migrations/0001_init.sql`, `0002_…`, `0003_…`, `0004_review_fixes.sql`. They are not applied automatically. `0001` also creates the private `audio` storage bucket.
-3. Put that project's URL and service-role key in `.env.local`.
+# --- AI providers ---
+LLM_PROVIDER=openai
+OPENAI_API_KEY=sk-……                         ← paste
+LLM_MODEL_JUDGE=                             (leave empty = default model)
+LLM_MODEL_FAST=                              (leave empty = default model)
+ANTHROPIC_API_KEY=                           (not used, leave empty)
+DEEPGRAM_API_KEY=                            (not used, leave empty)
 
-## 5. Run it
+# --- Admin and jobs ---
+ADMIN_KEY=……                                 (generated in 5.2)
+CRON_SECRET=……                               (generated in 5.2)
+AI_GLOBAL_DAILY_LIMIT=                       (optional, default 1500)
+SESSION_STARTS_PER_HOUR=                     (optional, default 60)
+```
+For setup B, paste only `OPENAI_API_KEY`, and keep `DATA_MODE=memory` and the Supabase lines empty. For setup A, change nothing.
+
+**The agent checks the result without revealing any value:**
+```bash
+for k in AI_MODE DATA_MODE OPENAI_API_KEY SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY ADMIN_KEY; do
+  v=$(grep -E "^$k=" .env.local | cut -d= -f2-); echo "$k: ${#v} characters"; done
+```
+`0 characters` on a line that setup needs means it still has to be filled.
+
+**If the team has no keys to share:**
+- **OpenAI:** create a key at platform.openai.com → API keys (and set a spend limit).
+- **Supabase (setup C):** create your own free Supabase project, then run the four migrations **in order** in its SQL editor: `supabase/migrations/0001_init.sql` → `0002_…` → `0003_…` → `0004_review_fixes.sql`. They aren't applied automatically, and `0001` also creates the private `audio` bucket. Copy its URL and **secret/service_role** key from Project Settings → API.
+
+> ⚠️ **The team's Supabase project is the live site's database.** Anything you do locally in setup C with the team's keys writes real rows: they appear in `/admin` metrics and count toward the site-wide AI cap. For heavy testing, use your own Supabase project.
+
+### 5.4 How the file is read
+- **Next.js loads it automatically** for `npm run dev`, `npm run build` and `npm start`. **Restart the server after editing it.**
+- **Shell variables win:** a variable already set in your terminal (or in the test config) overrides the file. This is why the automated tests always use mock mode.
+- **Empty means unset.** A missing key that the chosen mode needs stops the server with a message that names the variable but never prints a value.
+- **Every variable:**
+
+| Variable | Meaning |
+|---|---|
+| `AI_MODE` | `mock` (default) or `live` |
+| `DATA_MODE` | `memory` (default) or `supabase` |
+| `LLM_PROVIDER`, `STT_PROVIDER` | `openai` (the only provider implemented) |
+| `OPENAI_API_KEY` | Needed for live mode |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Needed for supabase mode; the service-role key is server-only and bypasses database security |
+| `ADMIN_KEY` | 16+ characters; unlocks `/admin` |
+| `CRON_SECRET` | Lets you call `/api/cron/retention`; unset = 503 |
+| `LLM_MODEL_JUDGE`, `LLM_MODEL_FAST` | Optional model overrides (defaults `gpt-6.1-sol`, `gpt-6-luna`) |
+| `AI_GLOBAL_DAILY_LIMIT` | Optional site-wide cap on AI calls per 24 h (default 1500) |
+| `SESSION_STARTS_PER_HOUR` | Optional cap on new sessions per network per hour (default 60). Locally every request counts as one network, so raise it if you create many sessions |
+| `ANTHROPIC_API_KEY`, `DEEPGRAM_API_KEY` | Unused placeholders |
+| `VERCEL_OIDC_TOKEN` | Added automatically by `vercel link`; never set it by hand |
+
+## 6. Run it
 
 ```bash
 cd product/app
-npm run dev                  # http://localhost:3000, hot reload
+npm run dev                  # http://localhost:3000, reloads on save
 ```
-- Check which modes are active: http://localhost:3000/api/health → `{"aiMode":"mock","dataMode":"memory",…}`.
-- **Production-like run:** `npm run build && npm start` (port 3000). Builds are stricter than dev and match Vercel, so run one before deploying.
-- **Cookie nuance:** in a production build the session cookie (`ipc_session`) is marked `Secure`. Chrome accepts it on `http://localhost`; some other browsers don't, so use Chrome for `npm start` testing.
-- **Don't run `next dev` and a build at the same time;** both use the `.next/` folder. Stop the dev server before `npm run build` or the E2E tests.
+- **Confirm the mode:** open http://localhost:3000/api/health. It should show `"aiMode":"mock","dataMode":"memory"` for setup A, `live` for B and C, and `supabase` for C.
+- **Production-like run:** `npm run build && npm start`. This is stricter than dev and matches Vercel, so run it before any deploy.
+- **Cookie note:** in a production build the session cookie (`ipc_session`) is `Secure`. Chrome accepts it on `http://localhost`; some other browsers don't, so use Chrome for `npm start`.
+- **One at a time:** don't run `npm run dev` and a build or the E2E tests at the same time. They share the `.next/` folder.
 
-## 6. Test
+## 7. Test it
 
 ```bash
 cd product/app
-npm run verify               # lint + typecheck + unit + E2E: must be green before any commit
+npm run verify               # lint + typecheck + unit tests + E2E; must be green before any commit
 ```
-Expected now: 161 unit tests and 23 E2E tests, taking about 2 minutes.
+Expected (as of 22 Nov 2026): 161 unit tests and 23 E2E tests, about 2 minutes.
 
-| Command | What it runs | Notes |
+| Command | What it runs | Tips |
 |---|---|---|
 | `npm run lint` | ESLint | |
-| `npm run typecheck` | `next typegen` + `tsc` | Regenerates route types first |
-| `npm test` | Vitest unit tests (`src/**/*.test.ts`) | One file: `npx vitest run src/modules/feedback` |
-| `npm run e2e` | Playwright | Builds a production server on **port 3100** (must be free), always **mock + memory**, one worker, Chromium. One spec: `npx playwright test e2e/smoke.spec.ts` |
+| `npm run typecheck` | Route types + TypeScript | |
+| `npm test` | Unit tests (Vitest) | One area: `npx vitest run src/modules/feedback` |
+| `npm run e2e` | Browser tests (Playwright, Chromium) | Builds a production server on **port 3100**, always mock + memory, one at a time. One file: `npx playwright test e2e/smoke.spec.ts` |
 
-**E2E nuances:**
-- **No microphone needed:** specs that record use a fake microphone (`e2e/fixtures/fake-mic.ts`), because Chromium's own fake-device flag hung on the build machine.
-- **Production build on purpose:** with `next dev`, early clicks landed before the page was interactive. Buttons stay disabled until the page has loaded fully (`useHydrated`).
-- **On failure:** a trace is kept in `test-results/`. Open it with `npx playwright show-trace <path>`.
+- **No microphone needed:** recording tests use a fake microphone (`e2e/fixtures/fake-mic.ts`).
+- **On failure:** a trace is saved in `test-results/`. Open it with `npx playwright show-trace <path>`.
+- **Your keys aren't used:** the E2E tests never touch your `.env.local` keys, because the test config forces mock mode.
 
-## 7. Manual testing tips
+## 8. Manual testing tips
 
-- **Fastest path:** home → **Try with a sample JD** → hub → pick a question → agree to the recording notice → record a few seconds → follow-up → feedback.
-- **Mock mode ignores what you say:** every first recording returns the same scripted answer (with a late decision and lots of "we"), and a retry returns an improved one, so before/after comparison always has something to show. Use live mode (setup B) to test real speech.
-- **Testing live speech without a microphone (macOS):**
+- **Quickest round:** home → **Try with a sample JD** → pick a question → agree to the recording notice → record a few seconds → answer or skip the follow-up → read the feedback → **Retry** → compare.
+- **Mock mode ignores what you say:** the first recording always returns the same scripted answer (late decision, lots of "we"), and a retry returns an improved one. Use setup B to hear real feedback on real speech.
+- **Live speech without a microphone (macOS):**
   ```bash
   say -o answer.m4a --data-format=aac "In my last internship I decided to ..."
   ```
-  Upload it to `POST /api/attempts/<id>/answer` with `Content-Type: audio/mp4`. To get a session, call `POST /api/session/start`, keep the `ipc_session` cookie, then call `POST /api/session/consent`.
-- **Admin:** open `/admin` and enter your `ADMIN_KEY` to see the review queue and metrics.
-- **Delete my data:** use `/privacy` or any interview page. Afterwards your private link stops working.
-- **Retention job:**
-  ```bash
-  curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/retention
-  ```
-  Expect `401` without the header, `503` when `CRON_SECRET` is unset, and `200 {"deleted":N}` otherwise. It deletes only recordings older than 30 days.
+  Upload it to `POST /api/attempts/<id>/answer` with `Content-Type: audio/mp4`. To get there, first call `POST /api/session/start` (keep the `ipc_session` cookie), then `POST /api/session/consent`.
+- **Admin:** open `/admin` and enter the `ADMIN_KEY` from your `.env.local`.
+- **Delete my data:** use `/privacy` or any interview page. Afterwards the private link stops working.
+- **Retention job:** `curl -H "Authorization: Bearer <CRON_SECRET>" http://localhost:3000/api/cron/retention`. Without the header you get 401; with no secret set, 503; otherwise 200 `{"deleted":N}`. Only recordings older than 30 days are deleted.
 - **Limits you may hit while testing:**
-  - 80 AI calls per session per day: you'll see a 429 "practice limit". Start a new session, or use memory mode and restart.
-  - 60 new sessions per hour per network: locally that's everyone on your machine. Raise `SESSION_STARTS_PER_HOUR`.
+  - 80 AI calls per session per day: you'll see a 429 "practice limit". Start a new session, or restart in memory mode.
+  - 60 new sessions per hour per network: raise `SESSION_STARTS_PER_HOUR`.
   - Two clicks at once on the same answer: the second gets a 409 "still being processed". This is intended.
 
-## 8. Nuances and gotchas
+## 9. Nuances and gotchas
 
-**Framework (Next.js 16 is not the Next.js most models know):**
-- Read `product/app/AGENTS.md` and the guides in `node_modules/next/dist/docs/` before using any Next API.
-- `cookies()` and `params` are async. Middleware is now called `proxy`.
-- `cacheComponents` is on: anything that reads cookies, request data or the clock must `await connection()`, or be rendered inside `<Suspense>`. Otherwise the build prerenders it, or fails with "used `new Date()` during prerender".
+**Next.js 16 is newer than most models know:**
+- Read `product/app/AGENTS.md` and `node_modules/next/dist/docs/` before using a Next API.
+- `cookies()` and `params` are async, and middleware is now called `proxy`.
+- With `cacheComponents` on, code that reads cookies, request data or the clock needs `await connection()`, or must sit inside `<Suspense>`. Otherwise the build fails with an error like "used `new Date()` during prerender".
 
 **Architecture rules:**
 - All data goes through the `Repo` interface. A new table or query must be added to **both** `lib/db/memory.ts` and `lib/db/supabase.ts`.
-- Schema changes go in a **new numbered migration**; never edit an applied one. Apply it to every Supabase project by hand, and record it in `product/log.md`.
-- All AI goes through `getLlm()` / `getStt()` and `withAiCall`. Never call OpenAI directly from feature code.
-- Each AI task has a Zod contract (`lib/contracts.ts`) and a prompt (`modules/ai/live/prompts.ts`); change both together.
-- `env.ts` is the only file that reads `process.env`. New variables go in its schema and in `.env.example` (names only).
+- Schema changes go in a **new numbered migration**; never edit an applied one. Apply it by hand to every Supabase project, and log it.
+- All AI goes through `getLlm()` / `getStt()` and `withAiCall`; never call OpenAI directly. Each AI task has a contract in `lib/contracts.ts` and a prompt in `modules/ai/live/prompts.ts`; change both together.
+- `env.ts` is the only file that reads environment variables. Add new ones to its schema and to `.env.example` (names only).
 - Events must be on the allow-list in `modules/events/events.ts`. Never put user text in events or logs.
 
 **Live AI:**
-- **Time budget:** each request gets 45 s of AI time. Routes have `maxDuration = 60`.
-- **Speech-to-text model:** `whisper-1` is deprecated but supports word timestamps until **26 Feb 2027**. Plan the switch before then.
-- **Safari/iPhone recordings:** they arrive as `audio/mp4` and must be sent to OpenAI named `.m4a`; it rejects `.mp4`. This is already handled.
-- **Ownership checks are off in mock mode:** the mock AI never invents, so invention checks (`inventsClaims`) only matter in live mode. Test new prompts in live mode.
+- **Time budget:** each request gets 45 s of AI time (routes allow 60 s).
+- **Speech-to-text model:** `whisper-1` keeps word timestamps only until **26 Feb 2027**. Plan the switch before then.
+- **Safari/iPhone recordings:** they arrive as `audio/mp4`, and OpenAI only accepts them when the file is named `.m4a`. This is already handled.
+- **Test prompt changes in live mode:** the safety checks against invented facts only matter there, because the mock never invents anything.
 
-**Memory mode:** data lives in the server process, so every restart wipes it, and it's refused on Vercel. Use Supabase anywhere data must survive.
+**Memory mode** loses everything on restart and is refused on Vercel.
 
-**Deployment** (only if you have access to the Vercel project):
-- The site is deployed with the Vercel CLI from `product/app`: run `npx vercel deploy --prod`.
-- The project is **not connected to GitHub**, so pushing does not deploy.
-- Production settings live in Vercel's dashboard, not in your `.env.local`.
-- `vercel link` writes a `.vercel/` folder and a `VERCEL_OIDC_TOKEN` line into `.env.local`; both are git-ignored.
+**Deployment** (only for people with Vercel access):
+- Run `npx vercel deploy --prod` from `product/app`. The Vercel project isn't connected to GitHub, so pushing doesn't deploy.
+- Production settings are changed in the Vercel dashboard, not in `.env.local`.
+- `vercel link` creates a `.vercel/` folder and adds `VERCEL_OIDC_TOKEN` to `.env.local`; both are git-ignored.
 
-**Claude Code hooks:** some setups run hooks (for example a "Fact-Forcing Gate") that block the first edit to a file until the agent states what it is changing and why. Answer it briefly and retry. This comes from the user's own Claude configuration, not this repo.
+**Claude Code hooks:** some setups run hooks (for example a "Fact-Forcing Gate") that block the first edit to a file until the agent says what it's changing and why. Answer briefly and retry; this comes from the user's own Claude configuration, not this repo.
 
-## 9. Troubleshooting
+## 10. Troubleshooting
 
-| Symptom | Cause | Fix |
+| Symptom | Likely cause | Fix |
 |---|---|---|
-| `command not found: npx` | Node not on PATH (nvm) | See §1 |
-| Server stops with "Invalid environment configuration (missing: …)" | Live or Supabase mode without its keys | Fill in the named variables, or switch back to mock/memory |
-| `/api/health` still shows `mock` after editing `.env.local` | Server not restarted, or the variable is also set in your shell | Restart; `unset AI_MODE` |
-| E2E: "port 3100 already in use" | An old server is still running | Stop it, or run `E2E_PORT=3200 npm run e2e` |
-| Build fails: "used `new Date()`/cookies during prerender" | Request-time code outside `connection()`/`<Suspense>` | See §8, Framework |
-| Clicks do nothing in tests | Page not interactive yet | Wait for the button to be enabled; don't remove `useHydrated` |
+| `command not found: npx` / `node` | Node not on PATH (nvm) | §2 |
+| `product/app` doesn't exist | The branch has no app code | §3.2: pick a branch that contains it |
+| `npm ci` fails | Lockfile out of sync, or Node too old | Check `node -v` ≥ 20.9; try `npm install` |
+| Server stops: "Invalid environment configuration (missing: …)" | The chosen mode needs a key that is empty | Fill in the named line (§5.3), or switch back to `mock`/`memory` |
+| `/api/health` still shows `mock` after editing | Server not restarted, or the variable is set in your shell | Restart; `unset AI_MODE` |
+| Live AI calls fail with 401 | Wrong or expired OpenAI key, or a space or quotes around it | Re-paste the key with nothing else on the line |
+| Supabase "Invalid API key" | The anon/publishable key was pasted instead of the secret one | Use the **secret / service_role** key |
+| Supabase "function … does not exist" | Migrations not applied to that project | Run 0001 → 0004 in order (§5.3) |
+| E2E: port 3100 in use | An old server is still running | Stop it, or `E2E_PORT=3200 npm run e2e` |
+| Build: "used `new Date()`/cookies during prerender" | Request-time code outside `connection()`/`<Suspense>` | §9 |
+| Clicks do nothing in tests | Page not interactive yet | Wait for the button to be enabled; keep `useHydrated` |
 | 429 on every AI step | Daily quota reached | New session, or restart memory mode |
-| Live transcription fails with HTTP 400 | Unsupported audio format or name | Allowed formats: webm, mp4/m4a, ogg, mpeg, wav, aac |
-| Supabase "function … does not exist" | Migration `0004` not applied to that project | Run the migrations in order (§4) |
+| Transcription fails with HTTP 400 | Unsupported audio | Use webm, mp4/m4a, ogg, mpeg, wav or aac |
 
-## 10. Before you finish a change
+## 11. Before you finish a change
 
 - [ ] `npm run verify` is green.
 - [ ] Tests were added or updated (every bug gets a regression test).
 - [ ] The module `README.md` is updated, and `product/06_product-engineering-context.md` too if a feature or pattern changed.
-- [ ] A new entry is appended to `product/log.md` (and the root `log.md` for root files), and `product/STATUS.md` is updated if the state changed.
-- [ ] No `.env*` file (other than `.env.example`), key or personal name is in `git diff --cached`.
-- [ ] Commit only when asked. Commits end with the co-author line your tool requires.
+- [ ] A new entry is appended to `product/log.md` (plus the root `log.md` for root files), and `product/STATUS.md` is updated if the state changed.
+- [ ] `git diff --cached` contains no `.env*` file (other than `.env.example`), no key, and no personal name.
+- [ ] Commit and push only when the human asks.

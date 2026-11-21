@@ -147,3 +147,9 @@
 - **Why:** The user asked for it to be committed to their branch so others can set up locally.
 - **Notes:** The guide's own prompt points to `product/07_local-setup-guide.md`, but the file is named `Local setup guide.md`. Its test counts (161 unit, 23 E2E) and the "private link stops working" line predate the changes in PR #3 (now 173 unit, 25 E2E; no private link). Not edited here.
 - **Files:** `Local setup guide.md`, `log.md`
+
+## 2026-11-22: Samyak via Claude
+- **What:** Updated `Local setup guide.md` (rewritten by the user): added a section on how the app runs online (Vercel, Supabase, OpenAI) versus locally, a branch-selection flow where the agent inspects the branches and asks the human which to use, a step-by-step `.env.local` setup (three setups A/B/C, the agent generates the local passwords, the human pastes the keys, a check that never prints values), and a longer troubleshooting table. Committed as provided.
+- **Why:** The user asked for the revised guide to be committed to their branch.
+- **Notes:** Still open from the previous version: the guide's prompt points to `product/07_local-setup-guide.md`, but the file is `Local setup guide.md`. It still says 161 unit / 23 E2E tests (PR #3 makes it 173 / 25) and still says "the private link stops working" after delete (§8), though the resume link is removed in PR #3. Not edited here.
+- **Files:** `Local setup guide.md`, `log.md`
