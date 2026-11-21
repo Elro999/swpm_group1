@@ -14,7 +14,7 @@ A candidate with no account opens a web page, pastes a job description (and opti
 - **C1 Never rewrite, never invent.** No generated replacement text for an answer or story; no ownership, number, outcome, title or scope that the user did not say. (G5, SB5, MF5)
 - **C2 Pin every claim.** A feedback point without a verbatim quote that exists in the transcript is dropped, not shown. (G2)
 - **C3 Fit and behavioural only.** No case, guesstimate, GD or technical-round content. (non-goals)
-- **C4 No sign-up in MVP1.** First value without a form; identity is an anonymous session + private resume link. (G1, PF1)
+- **C4 No sign-up in MVP1.** First value without a form; identity is an anonymous session in an httpOnly cookie; no cross-device resume link in v1. (G1, PF1)
 - **C5 Privacy.** Voice and stories are personal data: explicit consent before recording, one-click deletion, no transcript or story text in analytics events or logs. (PF2, PF3)
 - **C6 One fix per retry; one follow-up per answer.** Keeps feedback usable, not a wall of text. (deck slide 14)
 
@@ -56,7 +56,7 @@ Provider choice and keys (Q1) · consent text and retention (Q2) · whether Whis
 | Before vs after on retry | Same JSON schema for both attempts; compare function returns per-check deltas and resolved/still-present points (match by `check_id`, not by free text) | High | Fix IDs for the check set so comparisons are stable |
 | 5-minute first value | Sample JD button + stories optional (PF6); transcription and analysis run in ≤ ~40 s combined for a 2-min answer (target) | Medium-high | Measure in Phase 2; if slower, show the transcript first and stream feedback as it completes |
 | Serverless time limits | Separate endpoints for transcribe and analyse, each with an explicit `maxDuration` (≤ 60 s); client polls `attempts.status` | High | Check the current Vercel plan limits when deploying |
-| Anonymous identity + resume link | `sessions.token` = 32 random bytes, stored hashed; httpOnly cookie + `/r/<token>` link that sets the cookie | High | Anyone holding the link has the data; stated in the UI |
+| Anonymous identity | `sessions.token` = 32 random bytes, stored hashed; httpOnly cookie only (no link carries it) | High | Clearing cookies loses access to the data; stated on the privacy page |
 | Teammate review + metrics | `/admin` guarded by `ADMIN_KEY` env (cookie after entering the key); read-only server components | High | Single shared key is fine for a 5-person team; rotate after the test |
 | Abuse and cost control | Per-session daily caps (AI calls, audio minutes), input size limits, no unauthenticated expensive endpoints | High | Caps in `lib/limits.ts`; values in env |
 | Deploy | Vercel project + Supabase project; env vars; migrations via Supabase CLI or SQL files applied manually | High | Requires the user's accounts; CLIs are not installed yet (Setup S1–S4) |
@@ -78,7 +78,6 @@ Provider choice and keys (Q1) · consent text and retention (Q2) · whether Whis
 | `/stories`, `/stories/[sid]` | Story bank, decision-first card, team/own split, ready toggle | SB1–SB3 |
 | `/i/[id]/gaps/[competencyId]` | Discovery prompts and draft-story creation | SD1–SD2 |
 | `/privacy` | What is recorded, who processes it, retention, delete | PF2 |
-| `/r/[token]` | Resume link | PF1 |
 | `/admin` | Review queue, per-session replay, metrics | PF4, PF5 |
 
 ### 3. Data model (Postgres; every row carries `session_id`, with ON DELETE CASCADE from `sessions`)
@@ -102,7 +101,7 @@ Provider choice and keys (Q1) · consent text and retention (Q2) · whether Whis
 - **Session:** `active → deleted`. Deletion removes rows and audio; token stops working.
 
 ### 5. Interfaces (server routes; JSON in, JSON out; all require the session cookie except `/api/session/start` and `/api/admin/*` which use the admin cookie)
-`POST /api/session/start` · `POST /api/interviews` (JD → competencies + questions) · `POST /api/audio/sign` (returns signed upload URL) · `POST /api/attempts` (create) · `POST /api/attempts/:id/transcribe` · `POST /api/attempts/:id/followup` · `POST /api/attempts/:id/analyse` · `GET /api/attempts/:id` (status + results, polled) · `POST /api/points/:id/rate` · `POST /api/stories` (paste → structured stories) · `PATCH /api/stories/:id` · `POST /api/interviews/:id/map` · `POST /api/competencies/:id/prompts` · `POST /api/competencies/:id/draft-story` · `POST /api/interviews/:id/prep` · `POST /api/events` · `GET /api/streak?tz=` (prep streak, derived from events; added 2026-11-21) · `DELETE /api/session` · `GET /api/admin/review`, `GET /api/admin/metrics`.
+`POST /api/session/start` · `POST /api/interviews` (JD → competencies + questions) · `POST /api/interviews/pdf-text` (raw PDF → extracted text; not stored) · `POST /api/audio/sign` (returns signed upload URL) · `POST /api/attempts` (create) · `POST /api/attempts/:id/transcribe` · `POST /api/attempts/:id/followup` · `POST /api/attempts/:id/analyse` · `GET /api/attempts/:id` (status + results, polled) · `POST /api/points/:id/rate` · `POST /api/stories` (paste → structured stories) · `PATCH /api/stories/:id` · `POST /api/interviews/:id/map` · `POST /api/competencies/:id/prompts` · `POST /api/competencies/:id/draft-story` · `POST /api/interviews/:id/prep` · `POST /api/events` · `DELETE /api/session` · `GET /api/admin/review`, `GET /api/admin/metrics`.
 Exact request/response types live in `app/src/lib/contracts.ts` (Zod schemas shared by client and server) once built; **that file is the source of truth, this list is the index.**
 
 ### 6. AI behaviour and guardrails (module contracts)

@@ -40,8 +40,7 @@ export function ConsentGate({ consented, children }: { consented: boolean; child
         Before you record
       </h3>
       <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-zinc-700 dark:text-zinc-300">
-        <li>Your spoken answers are recorded and turned into text so we can point to the exact moment to fix.</li>
-        <li>The audio and text are processed by our AI providers (speech-to-text and language model) only to give you feedback.</li>
+        <li>The audio and text are processed by our AI providers only to give you feedback.</li>
         <li>A member of our small student team may read your transcripts and feedback to check that the feedback is accurate.</li>
         <li>Audio is deleted after 30 days. You can delete everything at any time.</li>
       </ul>

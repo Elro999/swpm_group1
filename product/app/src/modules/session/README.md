@@ -4,9 +4,8 @@
 
 ## Intended behaviour
 - A visitor gets a session by `POST /api/session/start`: no form. Calling it again with a valid cookie reuses the session (`created: false`).
-- The session token is 32 random bytes (base64url, 43 chars). It lives only in an httpOnly cookie (`ipc_session`, 90 days, `sameSite=lax`, `secure` in production) and in the private resume link `/r/<token>`.
+- The session token is 32 random bytes (base64url, 43 chars). It lives only in an httpOnly cookie (`ipc_session`, 90 days, `sameSite=lax`, `secure` in production). It is never placed in a URL or returned in a response body (the resume link was removed in v1, so a user continues only in the same browser).
 - The database stores **only `sha256(token)`**. A leaked DB row cannot be turned into a working link.
-- `/r/<token>` on any device sets the cookie and redirects home; unknown, malformed or deleted tokens get a 404 that does not say whether a session existed.
 - `deleteSession` removes the session and (by cascade) everything it owns. Audio deletion joins it when audio exists (Phase 2 / task 6.3).
 
 ## Files
@@ -26,7 +25,7 @@ Token format and uniqueness; only the hash is stored; malformed tokens never rea
 - `noteVisit` runs inside `getCurrentSession` (after `await connection()`): a 12 h+ gap records `session_returned {days_since_start}`; `last_seen_at` is written at most every 5 minutes. Failures never block the page.
 - `deleteSession(repo, id, audio)` removes the recordings first, then every row (cascade), then records an anonymous `data_deleted {audio_files}` (no session id). If audio removal fails, nothing is deleted and the error surfaces so the user can retry. `DELETE /api/session` also clears the cookie. UI: `components/DeleteDataButton.tsx` (two-step confirm) on `/privacy` and each interview hub.
 
-**Tests:** `token.test.ts`, `session.test.ts`, `e2e/smoke.spec.ts`, `e2e/phase1-interview-setup.spec.ts` (consent, resume link).
+**Tests:** `token.test.ts`, `session.test.ts`, `e2e/smoke.spec.ts`, `e2e/phase1-interview-setup.spec.ts` (consent, same-browser return).
 
 ## Review fixes (2026-11-14)
 - **Delete sweeps storage:** `deleteSession` also deletes everything under the session's storage folder (`audio.list({ prefix })`), not only keys remembered in rows, and checks storage is empty before deleting rows.

@@ -25,7 +25,7 @@ Abhinav, an MBA placement candidate, has a shortlist and wants to land a two-min
 | 8 | **Try this question again** → record → skip → **Compare with attempt 1** | MF6/G6: same checks side by side; "Decision arrives late" moves to **Fixed**. |
 | 9 | Hub **Prep list** | PL1/PL2: 20-minute blocks; it updates as stories become ready. |
 | 10 | http://localhost:3000/admin → key `demo-team-key-1234567` | PF4/PF5: the team's review queue (quotes checkable against the transcript, the "not useful" reason) and the five hypothesis metrics with targets. |
-| 11 | **Privacy** → **Delete my data** → confirm | PF2: recordings and data gone; the private link stops working. |
+| 11 | **Privacy** → **Delete my data** → confirm | PF2: recordings and data gone. |
 
 ## Questions you may get
 - *Is the feedback real?* In this build the AI is mocked; the pipeline, guards and screens are real. Live mode (Claude + speech-to-text) is task 2.9 and needs API keys.

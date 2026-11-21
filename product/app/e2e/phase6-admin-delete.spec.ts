@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { installFakeMic } from "./fixtures/fake-mic";
 
 // Phase 6: team review (admin key → metrics + review queue + one session's transcript, quotes and flags)
-// and "Delete my data" (recordings and rows gone; private link stops working).
+// and "Delete my data" (recordings and rows gone).
 // ADMIN_KEY for E2E is set in playwright.config.ts.
 
 const ADMIN_KEY = "e2e-admin-key-not-secret";
@@ -65,14 +65,10 @@ test("admin: locked without the key; with it, metrics and a reviewable session",
   await admin.close();
 });
 
-test("delete my data: two-step confirm, everything gone, private link stops working", async ({ page }) => {
+test("delete my data: two-step confirm, everything gone", async ({ page }) => {
   await practiseAndFlag(page);
   const practiceUrl = page.url();
   const hubUrl = practiceUrl.replace(/\/mock\/.*$/, "");
-  await page.goto(hubUrl);
-  await page.getByText("Continue on another device").click();
-  const resumeUrl = await page.getByLabel("Your private link").inputValue();
-
   await page.goto("/privacy");
   await expect(page.getByText("A member of our small student team may read your transcripts")).toBeVisible();
   await page.getByRole("button", { name: "Delete my data" }).click();
@@ -81,9 +77,7 @@ test("delete my data: two-step confirm, everything gone, private link stops work
   await page.getByRole("button", { name: "Yes, delete everything" }).click();
   await expect(page.getByTestId("data-deleted")).toBeVisible();
 
-  // The resume link no longer works, and the old pages show nothing.
-  const res = await page.request.get(resumeUrl, { maxRedirects: 0 });
-  expect(res.status()).toBe(404);
+  // The old pages show nothing.
   await page.goto(hubUrl);
   await expect(page.getByText("could not be found")).toBeVisible();
   await page.goto("/");

@@ -27,7 +27,7 @@ Live progress is **not** tracked here. This file is the plan; `STATUS.md` is the
 | 0.1 | Scaffold Next.js (App Router, TS strict), Tailwind, ESLint, Vitest, Playwright; `npm run verify` | A1 | `npm run verify` passes on an empty app |
 | 0.2 | Env loader with Zod; `.env.example`; `AI_MODE`; fail fast on missing vars in live mode | A3 | App boots in mock mode with no keys |
 | 0.3 | SQL migration `0001_init.sql` for the data model in doc 02 §3, RLS on with no policies | A2 | Applies cleanly in Supabase SQL editor; schema comment per table |
-| 0.4 | DB client (server-only), session creation/lookup, hashed token cookie, resume route | PF1 | Unit test: cookie round-trip; wrong token → 401 |
+| 0.4 | DB client (server-only), session creation/lookup, hashed token cookie (resume route removed 2026-11-21) | PF1 | Unit test: cookie round-trip; wrong token → 401 |
 | 0.5 | `events` writer and `ai_calls` logger with a "no text in props" guard | PF3 | Unit test rejects props containing long strings |
 | 0.6 | `LlmProvider` / `SttProvider` interfaces + mock providers + provider factory | A3 | Mock returns fixtures that satisfy the Zod schemas |
 | 0.7 | `app/README.md` (run, env, scripts, structure) and module README template | handoff | Another agent can start the app from the README alone |
@@ -72,7 +72,7 @@ Live progress is **not** tracked here. This file is the plan; `STATUS.md` is the
 ## Phase 6: Review, metrics, deletion (~1.5 h)
 | 6.1 | `/admin` gate (`ADMIN_KEY`), read-only review queue: transcript, points + quotes, not-useful flags | PF4 | Unauthorised request → 401, tested |
 | 6.2 | Metrics page with the 5 hypotheses (numerator, denominator, target, pass/fail) | PF5 | Unit tests on metric SQL / functions using seeded synthetic events |
-| 6.3 | `DELETE /api/session` removing rows and audio; confirmation UI | PF2 | E2E: after delete, resume link 404 |
+| 6.3 | `DELETE /api/session` removing rows and audio; confirmation UI | PF2 | E2E: after delete, old pages show nothing |
 | 6.4 | `session_returned` event on 12 h+ gap | PF3 | |
 | 6.5 | Body-language fake door (log-only button) if the team says yes (Q7) | P1 | |
 

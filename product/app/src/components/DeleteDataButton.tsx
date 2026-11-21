@@ -7,7 +7,7 @@ import { ui } from "./ui";
 
 /**
  * "Delete my data" (PF2, task 6.3). Two steps (no browser dialog): ask, then confirm. Deletes recordings,
- * interviews, stories, attempts and feedback, and ends the session; the private link stops working.
+ * interviews, stories, attempts and feedback, and ends the session.
  */
 export function DeleteDataButton() {
   const hydrated = useHydrated();
@@ -30,7 +30,7 @@ export function DeleteDataButton() {
   if (stage === "done") {
     return (
       <p role="status" className="font-medium" data-testid="data-deleted">
-        Your data has been deleted: recordings, transcripts, interviews, stories and feedback. Your private link no longer works.{" "}
+        Your data has been deleted: recordings, transcripts, interviews, stories and feedback.{" "}
         <Link href="/" prefetch={false} className={ui.link}>
           Start again
         </Link>

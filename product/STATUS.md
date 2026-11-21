@@ -15,7 +15,7 @@
 | 2026-11-13 | Build the **full MVP1** per the deck, sequenced core loop first | Suraj |
 | 2026-11-13 | AI providers **undecided**: build behind `LlmProvider` / `SttProvider` with a mock mode; recommended default Claude + OpenAI Whisper | Suraj (deferred) |
 | 2026-11-13 | Stack: **Next.js 16.4** App Router + TypeScript + Tailwind 4; Vitest 4 + Playwright; Zod 4 contracts | Claude (no objection) |
-| 2026-11-13 | No accounts in MVP1: anonymous session + resume link | Deck |
+| 2026-11-13 | No accounts in MVP1: anonymous session (cookie). The resume link originally decided here was **removed 2026-11-21** (not needed for v1) | Deck; Samyak |
 | 2026-11-13 | Added **`DATA_MODE=memory`** (in-process store behind the same `Repo` interface) so the app and all tests run before Supabase exists; refused on Vercel | Claude (logged; doc 02 A6) |
 | 2026-11-13 | Audio uploads go **through our API** (not signed direct upload); attempt steps run **synchronously** per request (no polling); delivery checks are **code-owned** | Claude (logged; doc 02 "Deviations") |
 | 2026-11-13 | E2E runs on a **production build** with a **microphone test double** | Claude (logged) |
@@ -34,8 +34,8 @@
 
 ## What works right now
 - `npm run dev` in `product/app` with no `.env.local` → mock AI + in-memory data.
-- **Phase 0:** health route, anonymous sessions + resume links, events with no-user-text guard, `ai_calls` metadata log, security headers.
-- **Phase 1:** landing, add interview (JD + optional date/CV), hub with 3–5 questions each quoting the JD, competencies, consent gate, resume link, draft privacy page.
+- **Phase 0:** health route, anonymous sessions (cookie only), events with no-user-text guard, `ai_calls` metadata log, security headers.
+- **Phase 1:** landing, add interview (JD + optional date/CV), hub with 3–5 questions each quoting the JD, competencies, consent gate, draft privacy page.
 - **Phase 2:**
   - Hub shows **Practise** per question after consent → `/i/[id]/mock/[qid]`.
   - **Recorder**: MediaRecorder (WebM/Opus or MP4/AAC), 3:00 cap with timer, listen back, record again, clear messages for blocked or missing microphones.
@@ -67,6 +67,13 @@
 | Who owns the Vercel project / repo access (S2) | Team | Phase 7 |
 | Submission / demo date (blank in the deck) | Team | Planning |
 | First-5-user recruiting and reviewers (Q3) | Team | Phase 7.5 |
+
+## Todos left on purpose (running list; add new ones at the bottom, remove when done and log it)
+| Added | Todo | Why it's open | Where |
+|---|---|---|---|
+| 2026-11-21 | **OCR for image-only JD and CV PDFs.** A PDF with no text layer (Canva/Instagram graphics, screenshots saved as PDF, scans) is rejected with "no selectable text… paste the text instead". Recommended fix: when extraction returns no text, render the page and read it with the OpenAI vision model, then fill the same editable JD box (counts toward the AI quotas; no OCR in mock mode, where the current message stays). Alternative: local `tesseract.js` (works with no keys, slower, heavy on Vercel). | Samyak tried a Canva-exported JD (one 2752×3894 image, no text) and chose to leave it for now | `modules/interview/pdf.ts` (`extractPdfText`), `api/interviews/jd-pdf/route.ts` |
+| 2026-11-21 | **Role title is found by rules, not a model** (`roleTitle` in `modules/interview/format.ts`): labelled line ("Job Title: …"), "we are hiring a …", else the first short non-header line in the top 15 containing a role word (manager, engineer, analyst, …), else the first non-header line. Still wrong for titles with no role word ("Growth Ninja") when a company name comes first. If that matters: let the model return the title in the competencies call, verify it appears in the JD, store it (new column + migration) so the user can edit it. | Samyak asked for a no-model approach (done 2026-11-21); the model/editable-title upgrade is optional | `modules/interview/format.ts`, `format.test.ts` |
+| 2026-11-21 | **PDF upload (JD and CV): privacy page doesn't mention PDF handling** (file is read on the server and not stored; the CV text, once submitted, is stored like a pasted CV). CV PDFs with multi-column layouts may come out in a jumbled order; the user can fix it in the box. | Unit and API-level checks only; the button was not clicked in a browser by the agent | `app/src/app/privacy/page.tsx` |
 
 ## Known issues
 - Supabase migrations (`0001`–`0003`), `src/lib/db/supabase.ts` and the Supabase audio store in `src/lib/audio.ts` are **written but never executed** (no project yet; no local Postgres or Docker here).

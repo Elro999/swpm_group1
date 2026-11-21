@@ -7,8 +7,8 @@ export default function NotFound() {
     <main className={`${ui.page} flex flex-col gap-4`}>
       <h1 className={ui.h1}>This page could not be found.</h1>
       <p className={ui.lead}>
-        The link may be wrong, the page may belong to someone else, or the data may have been deleted. If you saved a private link,
-        open it again to get back to your work.
+        The link may be wrong, the page may belong to someone else, or the data may have been deleted. Your work is saved in the
+        browser you started it in.
       </p>
       <div>
         <Link href="/" className={ui.btnPrimary}>

@@ -13,7 +13,7 @@ import { getRepo } from "@/lib/db";
 import { isUuid } from "@/lib/ids";
 import { describeInterviewDate, roleTitle } from "@/modules/interview/format";
 import { buildPrepList } from "@/modules/prep/prep";
-import { getCurrentSession, readSessionToken } from "@/modules/session/cookie";
+import { getCurrentSession } from "@/modules/session/cookie";
 
 /**
  * Interview hub content (task 1.4; MF1 now, SB4 map in Phase 4, prep list in Phase 5).
@@ -30,10 +30,9 @@ export async function InterviewHub({ params }: { params: Promise<{ id: string }>
   const interview = await repo.interviews.findForSession(id, session.id);
   if (!interview) notFound();
 
-  const [competencies, questions, token, stories] = await Promise.all([
+  const [competencies, questions, stories] = await Promise.all([
     repo.competencies.listByInterview(interview.id),
     repo.questions.listByInterview(interview.id),
-    readSessionToken(),
     repo.stories.listBySession(session.id),
   ]);
   const labelOf = new Map(competencies.map((c) => [c.id, c.label]));
@@ -196,7 +195,6 @@ export async function InterviewHub({ params }: { params: Promise<{ id: string }>
         )}
       </section>
 
-      {token && <ResumeLink path={`/r/${token}`} />}
       <details className={ui.card}>
         <summary className="cursor-pointer font-medium">Delete my data</summary>
         <div className="mt-3">

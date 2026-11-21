@@ -31,7 +31,7 @@ MVP hypothesis metrics (deck slide 14, "Measured by"): ≥60% retry after feedba
 - **Scores, leaderboards, payments, native app**: no gamification or monetisation in MVP1; web only. *Changed 2026-11-21 (team decision):* one exception, a **personal prep streak** (Module 5 below), private to the user, with no points, no leaderboard and no notifications.
 - **Technical rounds (DSA, finance technicals)**: already served by LeetCode and prep books.
 - **Rewriting the user's answer or story** (product principle, not only an MVP cut): the AI asks and points, it does not rewrite.
-- **Accounts / sign-up / email nudges** in MVP1 (deck: "no sign-up, no nudges"). Identity is an anonymous browser session plus a resume link.
+- **Accounts / sign-up / email nudges** in MVP1 (deck: "no sign-up, no nudges"). Identity is an anonymous browser session (cookie). **No cross-device resume link in v1** (removed 2026-11-21).
 
 ## 4. Users
 - **Primary (MVP1): Abhinav**, jobs J1 *Find and fit my stories* and J2 *Land the story*.
@@ -44,7 +44,7 @@ Grouped by deck module. IDs match the deck's feature IDs (MF, SB, SD, PL) so tes
 ### Module 0: Setup (platform)
 - US-0.1 As a candidate, I want to start without creating an account so that I get value in my first five minutes.
 - US-0.2 As a candidate, I want to add an interview by pasting a JD (and optionally the date and my CV) so that everything after is tailored to that role.
-- US-0.3 As a candidate, I want to come back to my work on the same device, or on another via a private link, so that my stories and attempts are not lost.
+- US-0.3 As a candidate, I want to come back to my work on the same browser, so that my stories and attempts are not lost.
 - US-0.4 As a candidate, I want to know what is recorded and delete everything in one click so that I trust it with my voice and stories.
 
 ### Module 1: Mock and feedback (MF1–MF7)
@@ -88,14 +88,14 @@ Why: S5 "Products that stick" (habit, Duolingo streak); "once you lose touch, it
 ### P0: must ship (MVP1 is not valid without these)
 Acceptance criteria use Given / When / Then. Each requirement also needs a negative case (what must not happen).
 
-**PF1 Anonymous session and resume link**
+**PF1 Anonymous session**
 - Given a first-time visitor, when they open the site, then a private session is created without any form, and the first screen offers "Add an interview".
 - Given the same browser returns, then their interviews, stories and attempts are present.
-- Given the resume link, when opened on another device, then the same data loads. Not: another user's data is ever reachable by guessing a URL (tokens are random, ≥128 bit).
+- Not: another user's data is ever reachable by guessing a URL (session tokens are random, ≥128 bit, and never put in a URL). Continuing on another device is out of scope for v1.
 
 **PF2 Consent and deletion**
 - Given the first mic use, then a plain-language notice states what is recorded, who processes it (LLM and transcription vendors), and how long it is kept; recording cannot start before "I agree".
-- Given "Delete my data", when confirmed, then the session's rows and audio files are removed and the resume link stops working.
+- Given "Delete my data", when confirmed, then the session's rows and audio files are removed and the session is ended.
 
 **PF3 Event tracking** (three events per Session 4/6: arrived · got the value · came back)
 - Given the events list in the capability doc, then each fires once with a session id and timestamp, and none contains transcript or story text.

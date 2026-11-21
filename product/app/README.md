@@ -35,7 +35,7 @@ src/
   app/                    Next.js routes (App Router). Route handlers are thin: parse → call a module → respond.
     page.tsx              Landing (/): value line, Start / sample-JD buttons, ContinueList for returning visitors
     interviews/new/       Add an interview: JD (required), date and CV (optional)
-    i/[id]/               Interview hub: questions with JD quotes + Practise links (after consent), competencies, resume link
+    i/[id]/               Interview hub: questions with JD quotes + Practise links (after consent), competencies
     i/[id]/mock/[qid]/    Practise one question: record → follow-up → pinned feedback → try again (MF2–MF7)
     …/[qid]/compare/      Before vs after across attempts of that question (MF6, G6)
     stories/              Story bank: paste, decision-first cards, team vs own, ready/edit (SB1–SB5)
@@ -44,9 +44,9 @@ src/
     api/session/ (DELETE) "Delete my data": recordings + every row, cookie cleared (PF2)
     privacy/              Privacy notice (DRAFT wording, needs team approval: PRD Q2)
     api/health/           GET: active modes, never secrets
-    api/session/start/    POST: anonymous session + resume path (PF1)
+    api/session/start/    POST: anonymous session, cookie only (PF1)
     api/session/consent/  POST: record consent before any recording (PF2)
-    api/interviews/       POST: JD → verified competencies + questions (MF1)
+    api/interviews/       POST: JD → verified competencies + questions (MF1); pdf-text/: PDF → text (JD or CV)
     api/events/           POST: client-only view events, allow-listed (PF3)
     api/attempts/…        Attempt lifecycle: create, view, answer/followup audio, skip, resume, viewed, audio playback
     api/points/[id]/rate/ POST: mark a feedback point not useful (MF7)
@@ -54,8 +54,7 @@ src/
     api/interviews/[id]/map/ POST: match stories to the role's competencies, gaps flagged (SB4, G3)
     api/interviews/[id]/cv/  POST: save the CV used for gap prompts (SD1)
     api/competencies/[id]/{prompts,draft-story}/  POST: CV-based prompts; answer → draft story that fills the gap (SD1, SD2)
-    r/[token]/            GET: resume link → sets cookie → home
-  components/             Shared UI: ui.ts class strings, StartButtons, ConsentGate, Recorder, MatchStoriesButton, GapDiscovery, TrackView, ResumeLink
+  components/             Shared UI: ui.ts class strings, StartButtons, ConsentGate, Recorder, MatchStoriesButton, GapDiscovery, TrackView
   lib/
     env.ts                The only reader of process.env; validates modes and required keys
     contracts.ts          Zod schemas for every AI output (source of truth for shapes)

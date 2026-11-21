@@ -53,7 +53,7 @@ export default function PrivacyPage() {
       <section className="flex flex-col gap-2">
         <h2 className={ui.h2}>Your controls</h2>
         <ul className="list-disc space-y-1 pl-5">
-          <li>No account: you&apos;re identified only by a private cookie and a private link you can copy.</li>
+          <li>No account: you&apos;re identified only by a private cookie in this browser. Your work stays in this browser; clearing cookies means you can&apos;t get back to it.</li>
           <li>Nothing is recorded until you agree on the practice screen.</li>
           <li>You can delete all your data at any time, below or from any interview page.</li>
         </ul>
