@@ -34,3 +34,8 @@ Migration `0003_competency_map_cascade.sql` fixes a latent conflict in 0001 (`ON
 
 ## STAR redesign (2026-11-22)
 Replaced multi-story pasting and the decision-first card with one titled story per save, sorted into STAR; added delete. The review fix "lossless pasting" now holds by construction (every sentence is in one part). `structureFromModel` and `labelSentences` were removed.
+
+## Role page cards (2026-11-22, design/01)
+- `matchStories(interviewId, { storyIds?, competencyIds?, includeLinked?, replaceChosen? })` replaces "match everything, replace everything": it checks only competencies without a story, never replaces a match or a row with `chosenByUser`, writes a gap where a checked competency has no fit, and sets `interviews.matched_at` once every story added since the last match has been checked. `mapStories` is a thin wrapper for a full run.
+- `setCompetencyStory(competencyId, storyId | null)`: Change (marks `chosenByUser`) and Unlink (gap row; the story stays). Route `PUT /api/competencies/:id/story`.
+- `linkBuiltStory(storyId, competencyId)`: "Build story" checks a new story against one competency only; links it with a verbatim reason or leaves the card as it was. Event `gap_story_filled {source: "build_story"}` when it filled a gap. `POST /api/stories` takes `forCompetencyId` (ownership checked before saving).

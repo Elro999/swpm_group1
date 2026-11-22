@@ -72,3 +72,8 @@
 - **What:** Merged Addyant's `side-branch` (design proposal in `design/`) with `main` on branch `claude/focused-volta-tdzy4u`. Resolved two conflicts by keeping both sides: the folder map in `instructions.md` lists both `product/` and `design/`; this log keeps every entry from both branches (Addyant's 2026-11-21 entry sits after the entries that were already on `main`).
 - **Why:** Rohith asked to bring `side-branch` into `main`; it was based on an older `main`, so the same lines had changed on both sides.
 - **Files:** `instructions.md`, `log.md`, `design/` (from `side-branch`, unchanged)
+
+## 2026-11-22: Rohith via Claude
+- **What:** Built Addyant's design proposal (`design/01`) in the product: merged question cards on the role page, CV prompts on every card, "Build story" into My stories, scoped matching, consent from a card (details in `product/log.md` and `design/log.md`).
+- **Why:** Rohith asked to build the proposal and check it against the STAR story changes.
+- **Files:** `product/` (see `product/log.md`), `design/` (see `design/log.md`), `log.md`

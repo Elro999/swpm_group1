@@ -43,6 +43,7 @@ test("a too-short JD shows a specific message and does not create an interview",
 test("recording controls stay hidden until the user agrees, and consent persists", async ({ page }) => {
   await createSampleInterview(page);
   await expect(page.getByTestId("practice-ready")).toHaveCount(0);
+  await page.getByText("What happens to my recording").click();
   await expect(page.getByRole("link", { name: "how we handle your data" })).toBeVisible();
 
   await page.getByRole("button", { name: "I agree, let me practise" }).click();

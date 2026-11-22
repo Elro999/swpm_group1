@@ -131,34 +131,136 @@ function joinParts(parts: string[]): string {
   return parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
 }
 
+export interface MatchScope {
+  /** Only these stories (default: every story in the session). */
+  storyIds?: string[];
+  /** Only these competencies (default: every competency of the interview). */
+  competencyIds?: string[];
+  /** Also check competencies that already have a story (default: only empty ones). Never replaces a story the user picked unless `replaceChosen`. */
+  includeLinked?: boolean;
+  replaceChosen?: boolean;
+}
+
+export interface MatchResult {
+  /** Every mapping row of the interview after the run. */
+  rows: CompetencyMapRow[];
+  /** Competencies that got a story in this run. */
+  linked: string[];
+  /** Stories that were checked. */
+  checked: number;
+}
+
 /**
- * SB4 / G3: map each of this interview's competencies to the best story, or mark a gap.
- * The model proposes; code accepts a mapping only if the story belongs to this user and the reason is a
- * verbatim quote from that story. Everything else becomes a gap, so every competency always has one or the other.
+ * SB4 / G3 (scoped since 2026-11-22, design/01): match stories to the interview's competencies.
+ * Only competencies without a story are checked (unless `includeLinked`), so a run never replaces a match,
+ * and never one the user picked by hand. The model proposes; code accepts a match only if the story belongs
+ * to this user and the reason is a verbatim quote from that story. A checked competency with no fit becomes
+ * a gap, so after a full run every competency has a story or a gap.
  */
-export async function mapStories(deps: Deps, sessionId: string, interviewId: string): Promise<CompetencyMapRow[]> {
+export async function matchStories(deps: Deps, sessionId: string, interviewId: string, scope: MatchScope = {}): Promise<MatchResult> {
   const interview = await deps.repo.interviews.findForSession(interviewId, sessionId);
   if (!interview) throw new StoryError(404, "That interview was not found.");
   const competencies = await deps.repo.competencies.listByInterview(interviewId);
-  const stories = await deps.repo.stories.listBySession(sessionId);
+  const allStories = await deps.repo.stories.listBySession(sessionId);
+  const stories = scope.storyIds ? allStories.filter((s) => scope.storyIds!.includes(s.id)) : allStories;
   const byId = new Map(stories.map((s) => [s.id, s]));
+  const current = new Map((await deps.repo.competencyMap.listByCompetencies(competencies.map((c) => c.id))).map((m) => [m.competencyId, m]));
 
-  const rows: CompetencyMapRow[] = competencies.map((c) => ({ competencyId: c.id, storyId: null, isGap: true, rationaleQuote: null }));
-  if (stories.length && competencies.length) {
+  const candidates = competencies.filter((c) => {
+    if (scope.competencyIds && !scope.competencyIds.includes(c.id)) return false;
+    const m = current.get(c.id);
+    if (!m || m.isGap) return true;
+    if (m.chosenByUser) return Boolean(scope.replaceChosen);
+    return Boolean(scope.includeLinked);
+  });
+
+  const linked: string[] = [];
+  if (candidates.length && stories.length) {
     const res = await withAiCall(deps.repo, { sessionId, purpose: "story_map", provider: deps.llm.name }, () =>
       deps.llm.run("story_map", {
-        competencies: competencies.map((c) => ({ label: c.label, jd_quote: c.jdQuote })),
+        competencies: candidates.map((c) => ({ label: c.label, jd_quote: c.jdQuote })),
         stories: stories.map((s) => ({ id: s.id, text: s.rawText })),
       }),
     );
     for (const m of res.data.mappings) {
-      const i = competencies.findIndex((c) => c.label.trim().toLowerCase() === m.competency_label.trim().toLowerCase());
+      const c = candidates.find((x) => x.label.trim().toLowerCase() === m.competency_label.trim().toLowerCase());
       const story = m.story_id ? byId.get(m.story_id) : undefined;
       const loc = story && m.rationale_quote ? locateQuote(story.rawText, m.rationale_quote) : null;
-      if (i < 0 || !story || !loc) continue;
-      rows[i] = { competencyId: competencies[i].id, storyId: story.id, isGap: false, rationaleQuote: story.rawText.slice(loc.start, loc.end) };
+      if (!c || !story || !loc || linked.includes(c.id)) continue;
+      await deps.repo.competencyMap.set({ competencyId: c.id, storyId: story.id, isGap: false, rationaleQuote: story.rawText.slice(loc.start, loc.end), chosenByUser: false });
+      linked.push(c.id);
     }
   }
-  await deps.repo.competencyMap.replace(competencies.map((c) => c.id), rows);
-  return rows;
+  // Checked but nothing fits: a gap (only where there was no story; a kept story is never removed).
+  for (const c of candidates) {
+    const m = current.get(c.id);
+    if (!linked.includes(c.id) && (!m || m.isGap)) await deps.repo.competencyMap.set({ competencyId: c.id, storyId: null, isGap: true, rationaleQuote: null, chosenByUser: false });
+  }
+
+  // "Match new story" clears once every story added since the last match has been checked.
+  const since = interview.matchedAt?.getTime() ?? -Infinity;
+  if (allStories.filter((s) => s.createdAt.getTime() > since).every((s) => byId.has(s.id))) await deps.repo.interviews.setMatchedAt(interviewId, new Date());
+
+  const rows = await deps.repo.competencyMap.listByCompetencies(competencies.map((c) => c.id));
+  return { rows, linked, checked: stories.length };
+}
+
+/** Kept for callers that want the classic "match everything" run. */
+export const mapStories = async (deps: Deps, sessionId: string, interviewId: string) => (await matchStories(deps, sessionId, interviewId)).rows;
+
+/**
+ * Change / Unlink on a question card (design/01): the user picks a story for a competency by hand, or removes
+ * the link. Picking marks it "chosen by you" so automatic matching never replaces it. Unlinking removes only
+ * the link: the story stays in My stories and the card goes back to its CV prompts.
+ */
+export async function setCompetencyStory(deps: Pick<Deps, "repo">, sessionId: string, competencyId: string, storyId: string | null): Promise<CompetencyMapRow> {
+  const competency = await deps.repo.competencies.findById(competencyId);
+  const interview = competency ? await deps.repo.interviews.findForSession(competency.interviewId, sessionId) : null;
+  if (!competency || !interview) throw new StoryError(404, "That skill was not found.");
+  if (storyId === null) {
+    const row: CompetencyMapRow = { competencyId, storyId: null, isGap: true, rationaleQuote: null, chosenByUser: false };
+    await deps.repo.competencyMap.set(row);
+    return row;
+  }
+  const story = await deps.repo.stories.findForSession(storyId, sessionId);
+  if (!story) throw new StoryError(404, "That story was not found.");
+  const row: CompetencyMapRow = { competencyId, storyId, isGap: false, rationaleQuote: null, chosenByUser: true };
+  await deps.repo.competencyMap.set(row);
+  return row;
+}
+
+/**
+ * "Build story" (design/01): after saving a story written for one question, check it against that question's
+ * competency only. It is linked (with a verbatim "why it fits") only if it shows the competency.
+ */
+/** Throws 404 unless the competency belongs to one of this session's interviews. */
+export async function assertOwnedCompetency({ repo }: Pick<Deps, "repo">, sessionId: string, competencyId: string): Promise<void> {
+  const competency = await repo.competencies.findById(competencyId);
+  if (!competency || !(await repo.interviews.findForSession(competency.interviewId, sessionId))) throw new StoryError(404, "That skill was not found.");
+}
+
+export async function linkBuiltStory(
+  deps: Deps,
+  sessionId: string,
+  storyId: string,
+  competencyId: string,
+): Promise<{ competencyId: string; rationaleQuote: string | null } | null> {
+  const competency = await deps.repo.competencies.findById(competencyId);
+  const interview = competency ? await deps.repo.interviews.findForSession(competency.interviewId, sessionId) : null;
+  if (!competency || !interview) throw new StoryError(404, "That skill was not found.");
+  const [before] = await deps.repo.competencyMap.listByCompetencies([competencyId]);
+  const { linked, rows } = await matchStories(deps, sessionId, interview.id, {
+    storyIds: [storyId],
+    competencyIds: [competencyId],
+    includeLinked: true,
+    replaceChosen: true,
+  });
+  if (!linked.includes(competencyId)) {
+    // Not a fit: leave whatever was there before untouched.
+    if (before) await deps.repo.competencyMap.set(before);
+    return null;
+  }
+  if (!before || before.isGap) await recordEvent(deps.repo, sessionId, "gap_story_filled", { source: "build_story" });
+  const row = rows.find((r) => r.competencyId === competencyId);
+  return { competencyId, rationaleQuote: row?.rationaleQuote ?? null };
 }

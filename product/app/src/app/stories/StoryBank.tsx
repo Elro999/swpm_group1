@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useId, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { ui } from "@/components/ui";
 import { ensureSession } from "@/lib/client";
 import { STAR_PARTS } from "@/lib/db/types";
 import { useHydrated } from "@/lib/useHydrated";
+import type { BuildContext } from "@/modules/discovery/service";
 import type { StoryView } from "@/modules/stories/deps";
-import { STAR_LABEL, STAR_QUESTION } from "@/modules/stories/star";
+import { missingParts, STAR_LABEL, STAR_QUESTION } from "@/modules/stories/star";
 import { StoryCard } from "./StoryCard";
 
 const MIN_CHARS = 40;
@@ -21,21 +22,42 @@ const TITLE_MAX = 80;
  * - the STAR guide sits next to the box, so users recognise what to write instead of recalling it (Miller, chunking).
  * Server rules decide everything; this only shows them.
  */
-export function StoryBank({ initial, returnTo }: { initial: StoryView[]; returnTo: string | null }) {
+type BuildResult = { story: StoryView; link: { competencyId: string; rationaleQuote: string | null } | null };
+
+export function StoryBank({
+  initial,
+  returnTo,
+  build: initialBuild = null,
+  openId = null,
+}: {
+  initial: StoryView[];
+  returnTo: string | null;
+  build?: BuildContext | null;
+  openId?: string | null;
+}) {
   const hydrated = useHydrated();
   const id = useId();
   const [stories, setStories] = useState(initial);
-  const [composing, setComposing] = useState(initial.length === 0);
+  const [build, setBuild] = useState(initialBuild);
+  const [built, setBuilt] = useState<(BuildResult & { context: BuildContext }) | null>(null);
+  const [editKey, setEditKey] = useState<string | null>(null);
+  const [composing, setComposing] = useState(initial.length === 0 || Boolean(initialBuild));
   const [title, setTitle] = useState("");
-  const [text, setText] = useState("");
+  // "Build story": the CV line is the starting sentence (the guide stays outside the box, so it never ends up in the story).
+  const [text, setText] = useState(initialBuild?.prompt?.cvLine ? `${initialBuild.prompt.cvLine} ` : "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [openIds, setOpenIds] = useState<Set<string>>(() => new Set());
+  const [openIds, setOpenIds] = useState<Set<string>>(() => new Set(openId ? [openId] : []));
   const [announce, setAnnounce] = useState("");
   const addButton = useRef<HTMLButtonElement>(null);
   const titleInput = useRef<HTMLInputElement>(null);
 
   const tooShort = text.trim().length < MIN_CHARS;
+
+  // ?open=<id> (from a question card's "Open"): bring that story into view once.
+  useEffect(() => {
+    if (openId) document.getElementById(`story-${openId}`)?.scrollIntoView({ block: "start" });
+  }, [openId]);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -51,7 +73,7 @@ export function StoryBank({ initial, returnTo }: { initial: StoryView[]; returnT
       const res = await fetch("/api/stories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, text }),
+        body: JSON.stringify({ title, text, ...(build ? { forCompetencyId: build.competencyId } : {}) }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -61,6 +83,10 @@ export function StoryBank({ initial, returnTo }: { initial: StoryView[]; returnT
       const story = data.story as StoryView;
       setStories((s) => [...s, story]);
       setOpenIds((o) => new Set(o).add(story.id));
+      if (build) {
+        setBuilt({ story, link: (data.link as BuildResult["link"]) ?? null, context: build });
+        setBuild(null);
+      }
       setTitle("");
       setText("");
       setComposing(false);
@@ -114,6 +140,8 @@ export function StoryBank({ initial, returnTo }: { initial: StoryView[]; returnT
             New story
           </h2>
 
+          {build && <BuildGuide build={build} />}
+
           <div>
             <label htmlFor={`${id}-title`} className={ui.label}>
               Title
@@ -130,7 +158,7 @@ export function StoryBank({ initial, returnTo }: { initial: StoryView[]; returnT
             />
           </div>
 
-          <div className="grid gap-4 md:grid-cols-[1fr_14rem]">
+          <div className={build ? "" : "grid gap-4 md:grid-cols-[1fr_14rem]"}>
             <div>
               <label htmlFor={`${id}-text`} className={ui.label}>
                 Your story
@@ -148,7 +176,7 @@ export function StoryBank({ initial, returnTo }: { initial: StoryView[]; returnT
                 One story per save. At least {MIN_CHARS} characters.
               </p>
             </div>
-            <aside aria-label="What a STAR story covers" className="rounded-lg bg-zinc-50 p-3 text-sm dark:bg-zinc-900">
+            {!build && <aside aria-label="What a STAR story covers" className="rounded-lg bg-zinc-50 p-3 text-sm dark:bg-zinc-900">
               <p className="font-medium">A good story covers</p>
               <ul className="mt-2 flex flex-col gap-2">
                 {STAR_PARTS.map((p) => (
@@ -158,7 +186,7 @@ export function StoryBank({ initial, returnTo }: { initial: StoryView[]; returnT
                   </li>
                 ))}
               </ul>
-            </aside>
+            </aside>}
           </div>
 
           {error && (
@@ -178,6 +206,17 @@ export function StoryBank({ initial, returnTo }: { initial: StoryView[]; returnT
             )}
           </div>
         </form>
+      )}
+
+      {built && (
+        <BuildOutcome
+          result={built}
+          onEdit={() => {
+            setOpenIds((o) => new Set(o).add(built.story.id));
+            setEditKey(built.story.id);
+            requestAnimationFrame(() => document.getElementById(`story-${built.story.id}`)?.scrollIntoView({ block: "start" }));
+          }}
+        />
       )}
 
       <section aria-labelledby="bank-title" className="flex flex-col gap-4">
@@ -209,12 +248,91 @@ export function StoryBank({ initial, returnTo }: { initial: StoryView[]; returnT
 
         <ul className="flex flex-col gap-3" data-testid="story-list">
           {newestFirst.map((s) => (
-            <li key={s.id}>
-              <StoryCard story={s} open={openIds.has(s.id)} onToggle={() => toggle(s.id)} onChange={replace} onDeleted={removed} />
+            <li key={editKey === s.id ? `${s.id}-edit` : s.id} id={`story-${s.id}`} className="scroll-mt-24">
+              <StoryCard
+                story={s}
+                open={openIds.has(s.id)}
+                startEditing={editKey === s.id}
+                onToggle={() => toggle(s.id)}
+                onChange={replace}
+                onDeleted={removed}
+              />
             </li>
           ))}
         </ul>
       </section>
+    </div>
+  );
+}
+
+/** "Build story" guide (design/01, in STAR): the card's question, the CV line, and what to cover. It only asks; it never offers wording. */
+function BuildGuide({ build }: { build: BuildContext }) {
+  return (
+    <aside aria-label={`Building a story for question ${build.questionNo}`} className="flex flex-col gap-2 rounded-lg bg-indigo-50 p-4 text-sm dark:bg-indigo-950/50" data-testid="build-guide">
+      <p className="font-semibold">
+        Building a story for Q{build.questionNo} · {build.competencyLabel}
+      </p>
+      <p>{build.questionText}</p>
+      {build.prompt?.cvLine && <blockquote className={ui.quote}>From your CV: “{build.prompt.cvLine}”</blockquote>}
+      <p className="mt-1 font-medium">Answer in your own words:</p>
+      <ul className="flex flex-col gap-1">
+        <li>
+          <span className="font-semibold">Situation:</span> {STAR_QUESTION.situation}
+        </li>
+        <li>
+          <span className="font-semibold">Task:</span> {STAR_QUESTION.task}
+        </li>
+        <li>
+          <span className="font-semibold">Action:</span> {build.prompt ? build.prompt.text : STAR_QUESTION.action} Say “I”, not “we”.
+        </li>
+        <li>
+          <span className="font-semibold">Result:</span> {STAR_QUESTION.result} How do you know?
+        </li>
+      </ul>
+    </aside>
+  );
+}
+
+/** After saving a story built for one question: linked (with the user's own "why it fits"), or saved and why not. */
+function BuildOutcome({ result, onEdit }: { result: BuildResult & { context: BuildContext }; onEdit: () => void }) {
+  const { context: c, link, story } = result;
+  const back = `/i/${c.interviewId}#q-${c.questionId}`;
+  const missing = missingParts(story).map((p) => STAR_LABEL[p]);
+  return (
+    <div
+      role="status"
+      className={`flex flex-col gap-2 rounded-xl border p-4 ${link ? "border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/40" : "border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40"}`}
+      data-testid="build-outcome"
+    >
+      {link ? (
+        <>
+          <p className="font-medium">
+            Linked to Q{c.questionNo} · {c.competencyLabel}.
+          </p>
+          {link.rationaleQuote && <p className="text-sm">Why it fits: “{link.rationaleQuote}”</p>}
+          <div>
+            <Link href={back} className={ui.btnPrimary}>
+              Back to Q{c.questionNo}
+            </Link>
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="font-medium">Saved to My stories, but not linked to Q{c.questionNo} yet.</p>
+          <p className="text-sm">
+            It doesn&apos;t show {c.competencyLabel} in your own words yet{missing.length ? `, and it is missing ${missing.join(", ")}` : ""}. Say what you did yourself and
+            what changed because of it.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <button type="button" className={ui.btnPrimary} onClick={onEdit}>
+              Edit this story
+            </button>
+            <Link href={back} className={ui.btnSecondary}>
+              Back to Q{c.questionNo}
+            </Link>
+          </div>
+        </>
+      )}
     </div>
   );
 }

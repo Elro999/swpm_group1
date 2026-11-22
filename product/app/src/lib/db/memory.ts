@@ -3,6 +3,7 @@ import type {
   AiCallRow,
   AttemptRow,
   CompetencyMapRow,
+  CompetencyPromptRow,
   CompetencyRow,
   EventRow,
   FeedbackMetricsRow,
@@ -31,6 +32,7 @@ interface Store {
   ratings: Map<string, PointRatingRow>;
   stories: Map<string, StoryRow>;
   competencyMap: Map<string, CompetencyMapRow>; // keyed by competencyId
+  prompts: Map<string, CompetencyPromptRow>;
   events: EventRow[];
   aiCalls: (AiCallRow & { id: string })[];
   leases: Map<string, number>; // attemptId → processing_until (epoch ms)
@@ -52,6 +54,7 @@ export function createMemoryRepo(): Repo {
     ratings: new Map(),
     stories: new Map(),
     competencyMap: new Map(),
+    prompts: new Map(),
     events: [],
     aiCalls: [],
     leases: new Map(),
@@ -73,6 +76,7 @@ export function createMemoryRepo(): Repo {
       if (c.interviewId !== id) continue;
       s.competencies.delete(k);
       s.competencyMap.delete(k);
+      for (const [pk, p] of s.prompts) if (p.competencyId === k) s.prompts.delete(pk);
     }
     for (const [k, q] of s.questions) {
       if (q.interviewId !== id) continue;
@@ -125,6 +129,10 @@ export function createMemoryRepo(): Repo {
       },
       async listByCompetencies(ids) {
         return ids.flatMap((id) => (s.competencyMap.has(id) ? [clone(s.competencyMap.get(id)!)] : []));
+      },
+      async set(r) {
+        if (!r.isGap && !r.storyId) throw new Error("competency_map: story or gap required");
+        s.competencyMap.set(r.competencyId, clone(r));
       },
       async invalidateStory(storyId) {
         for (const [k, m] of s.competencyMap) {
@@ -212,7 +220,7 @@ export function createMemoryRepo(): Repo {
     },
     interviews: {
       async create(input) {
-        const row: InterviewRow = { ...clone(input), id: randomUUID(), createdAt: new Date() };
+        const row: InterviewRow = { ...clone(input), id: randomUUID(), matchedAt: null, createdAt: new Date() };
         s.interviews.set(row.id, row);
         return clone(row);
       },
@@ -234,6 +242,27 @@ export function createMemoryRepo(): Repo {
         if (!row) throw new Error("interview not found");
         row.cvText = cvText;
         return clone(row);
+      },
+      async setMatchedAt(id, at) {
+        const row = s.interviews.get(id);
+        if (row) row.matchedAt = new Date(at);
+      },
+    },
+    competencyPrompts: {
+      async replace(competencyId, prompts) {
+        for (const [k, p] of s.prompts) if (p.competencyId === competencyId) s.prompts.delete(k);
+        return prompts.map((p, ord) => {
+          const row: CompetencyPromptRow = { id: randomUUID(), competencyId, ord, text: p.text, refs: [...p.refs] };
+          s.prompts.set(row.id, row);
+          return clone(row);
+        });
+      },
+      async listByCompetencies(ids) {
+        return [...s.prompts.values()].filter((p) => ids.includes(p.competencyId)).sort((a, b) => ids.indexOf(a.competencyId) - ids.indexOf(b.competencyId) || a.ord - b.ord).map(clone);
+      },
+      async findById(id) {
+        const row = s.prompts.get(id);
+        return row ? clone(row) : null;
       },
     },
     competencies: {

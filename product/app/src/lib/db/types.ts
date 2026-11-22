@@ -51,9 +51,11 @@ export interface InterviewRow {
   cvText: string | null;
   /** ISO date YYYY-MM-DD, or null when the user did not give one. */
   interviewDate: string | null;
+  /** Last time stories were matched for this interview (migration 0006); null = never. */
+  matchedAt: Date | null;
   createdAt: Date;
 }
-export type NewInterview = Omit<InterviewRow, "id" | "createdAt">;
+export type NewInterview = Omit<InterviewRow, "id" | "createdAt" | "matchedAt">;
 
 export interface CompetencyRow {
   id: string;
@@ -201,6 +203,17 @@ export interface CompetencyMapRow {
   isGap: boolean;
   /** Verbatim words from the mapped story that show the competency (G2 for mappings). */
   rationaleQuote: string | null;
+  /** The user picked this story by hand (migration 0006); automatic matching never replaces it. */
+  chosenByUser?: boolean;
+}
+
+/** A CV prompt saved for one competency (SD1, migration 0006). `refs` are verbatim CV lines. */
+export interface CompetencyPromptRow {
+  id: string;
+  competencyId: string;
+  ord: number;
+  text: string;
+  refs: string[];
 }
 
 export interface PointRatingRow {
@@ -220,6 +233,14 @@ export interface Repo {
     delete(id: string): Promise<void>; // cascades to competencies and questions
     /** Phase 5: add or replace the CV text used for gap prompts (null clears it). */
     setCv(id: string, cvText: string | null): Promise<InterviewRow>;
+    setMatchedAt(id: string, at: Date): Promise<void>;
+  };
+  competencyPrompts: {
+    /** Replace one competency's prompts (an empty list clears them). */
+    replace(competencyId: string, prompts: { text: string; refs: string[] }[]): Promise<CompetencyPromptRow[]>;
+    listByCompetencies(competencyIds: string[]): Promise<CompetencyPromptRow[]>; // by competency, then ord
+    /** Caller must check ownership through the competency's interview. */
+    findById(id: string): Promise<CompetencyPromptRow | null>;
   };
   competencies: {
     insertMany(interviewId: string, rows: NewCompetency[]): Promise<CompetencyRow[]>;
@@ -272,6 +293,8 @@ export interface Repo {
     /** Replace all mapping rows for these competencies (one interview's set) in one go. */
     replace(competencyIds: string[], rows: CompetencyMapRow[]): Promise<void>;
     listByCompetencies(competencyIds: string[]): Promise<CompetencyMapRow[]>;
+    /** Insert or replace one competency's row. */
+    set(row: CompetencyMapRow): Promise<void>;
     /** A story's text changed: every mapping that relied on it becomes a gap until mapping runs again. */
     invalidateStory(storyId: string): Promise<void>;
   };

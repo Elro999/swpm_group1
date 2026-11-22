@@ -1,6 +1,6 @@
 # 01: Merged question cards (role page redesign)
 
-**Status:** design proposal, not built · **Date:** 2026-11-21 · **Owner:** Addyant (with Claude)
+**Status:** built on 2026-11-22 (branch `claude/focused-volta-tdzy4u`; differences in `design/log.md`) · **Date:** 2026-11-21 · **Owner:** Addyant (with Claude)
 **Interactive mockup:** https://claude.ai/artifact/5p7XZFgy6yu3BL3R8YoWL5 (private until shared from its Share menu)
 **Source:** `01_merged-question-cards.dc.html` (a Claude Design canvas file; it only renders inside that canvas)
 **Changes:** the role page `/i/[id]`, today `product/app/src/app/i/[id]/InterviewHub.tsx` on the `dev/…` branches.

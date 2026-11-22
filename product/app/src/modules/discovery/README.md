@@ -18,3 +18,6 @@
 `POST /api/interviews/:id/cv`, `POST /api/competencies/:id/prompts`, `POST /api/competencies/:id/draft-story`; UI `components/GapDiscovery.tsx` on each **Gap** in the hub. Answers are typed; a voice answer (plan 5.2 "optional voice") is not built.
 
 **Tests:** `discovery.test.ts` (prompt verification, fallback, CV required, draft fills the gap in the user's words, ownership), `e2e/phase5-discovery-prep.spec.ts`.
+
+## Role page cards (2026-11-22, design/01)
+`gapPrompts` and `draftStoryFromAnswer` (and their routes) are removed. `ensureCardPrompts(interviewId)` makes up to 4 verified prompts per question's competency (one model call each, topped up from CV lines) and saves them in `competency_prompts` (migration 0006); a new CV clears them. `loadBuildContext` turns `/stories?from&q&prompt` IDs into the question, competency and CV line for the "Build story" guide, for the owner only. Route: `POST /api/interviews/:id/prompts`.
