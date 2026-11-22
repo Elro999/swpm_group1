@@ -6,8 +6,8 @@ import { createMockLlm } from "@/modules/ai/mock/llm";
 import { createMockStt } from "@/modules/ai/mock/stt";
 import { skipFollowup, startAttempt, submitAnswerAudio } from "@/modules/attempt/service";
 import { createInterview } from "@/modules/interview/service";
-import { addStories } from "@/modules/stories/service";
-import { SAMPLE_JD, SAMPLE_STORIES } from "@/test/fixtures";
+import { addStory } from "@/modules/stories/service";
+import { SAMPLE_JD, SAMPLE_STORY } from "@/test/fixtures";
 import { deleteSession, findSessionByToken, noteVisit, RETURN_GAP_MS, startSession } from "./session";
 
 describe("noteVisit (6.4: came back)", () => {
@@ -43,7 +43,7 @@ describe("deleteSession (6.3: delete my data)", () => {
     const a = await startAttempt(deps, consented, questions[0].id);
     const withAudio = await submitAnswerAudio(deps, consented, a.id, new Uint8Array([1, 2, 3]), "audio/webm");
     await skipFollowup(deps, consented, a.id);
-    await addStories({ repo, llm }, session.id, SAMPLE_STORIES);
+    await addStory({ repo, llm }, session.id, { text: SAMPLE_STORY, title: "Churn" });
     expect(await audio.get(withAudio.answerAudioKey!)).not.toBeNull();
 
     const result = await deleteSession(repo, session.id, audio);

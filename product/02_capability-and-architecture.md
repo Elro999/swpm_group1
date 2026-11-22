@@ -75,7 +75,7 @@ Provider choice and keys (Q1) · consent text and retention (Q2) · whether Whis
 | `/i/[id]` | Interview hub: questions, competency map (stories vs gaps), prep list | MF1, SB4, PL |
 | `/i/[id]/mock/[qid]` | Record answer → transcript → follow-up → record follow-up → feedback | MF2–MF5 |
 | `/i/[id]/mock/[qid]/compare` | Retry and before-vs-after | MF6 |
-| `/stories`, `/stories/[sid]` | Story bank, decision-first card, team/own split, ready toggle | SB1–SB3 |
+| `/stories` | Story bank: one story per save with a title, collapsed STAR cards, team/own split in Action, ready toggle, edit (title + text), delete with confirmation | SB1–SB3 |
 | `/i/[id]/gaps/[competencyId]` | Discovery prompts and draft-story creation | SD1–SD2 |
 | `/privacy` | What is recorded, who processes it, retention, delete | PF2 |
 | `/admin` | Review queue, per-session replay, metrics | PF4, PF5 |
@@ -85,7 +85,7 @@ Provider choice and keys (Q1) · consent text and retention (Q2) · whether Whis
 - `interviews` (id, session_id, jd_text, cv_text, interview_date, created_at)
 - `competencies` (id, interview_id, label, jd_quote, jd_quote_start, jd_quote_end, ord)
 - `questions` (id, interview_id, competency_id, text, jd_quote, ord)
-- `stories` (id, session_id, raw_text, source `pasted|discovery`, situation, decision, result, spans jsonb, sentences jsonb `[{text,start,end,actor:'own'|'team'|'unclear',flags[]}]`, ready bool, created_at)
+- `stories` (id, session_id, raw_text, **title** (≤ 80, migration 0005), **format** `star|sdr` (0005), source `pasted|discovery`, state `draft|structured|ready`, situation, decision, result, spans jsonb (sdr stories only), sentences jsonb `[{start,end,actor:'own'|'team'|'unclear',flags[],part?:'situation'|'task'|'action'|'result'}]`, created_at, updated_at)
 - `competency_map` (competency_id, story_id nullable, is_gap bool, rationale_quote)
 - `attempts` (id, question_id, attempt_no, status, answer_audio_key, answer_words jsonb `[{w,start,end}]`, answer_text, followup_text, followup_quote, followup_audio_key, followup_words jsonb, error, created_at) with unique(question_id, attempt_no)
 - `feedback_points` (id, attempt_id, check_id, kind `delivery|fit`, severity, message, quote, quote_start_ms, quote_end_ms, created_at)
@@ -97,11 +97,11 @@ Provider choice and keys (Q1) · consent text and retention (Q2) · whether Whis
 
 ### 4. States and transitions
 - **Attempt:** `created → uploaded → transcribing → transcribed → followup_ready → (followup_uploaded → followup_transcribed)? → analysing → ready`, or `failed` from any step with a user-visible reason and a retry button. Skipping the follow-up goes straight from `followup_ready` to `analysing`.
-- **Story:** `draft → structured → ready` (user toggles ready; editing returns it to `structured`).
+- **Story:** `draft → structured → ready`. STAR stories are `draft` while any STAR part is missing, `structured` when all four are present; ready is allowed only from `structured`. Editing the text re-sorts it (back to `draft` or `structured`). Deleting removes the row and its `competency_map` rows.
 - **Session:** `active → deleted`. Deletion removes rows and audio; token stops working.
 
 ### 5. Interfaces (server routes; JSON in, JSON out; all require the session cookie except `/api/session/start` and `/api/admin/*` which use the admin cookie)
-`POST /api/session/start` · `POST /api/interviews` (JD → competencies + questions) · `POST /api/interviews/pdf-text` (raw PDF → extracted text; not stored) · `POST /api/audio/sign` (returns signed upload URL) · `POST /api/attempts` (create) · `POST /api/attempts/:id/transcribe` · `POST /api/attempts/:id/followup` · `POST /api/attempts/:id/analyse` · `GET /api/attempts/:id` (status + results, polled) · `POST /api/points/:id/rate` · `POST /api/stories` (paste → structured stories) · `PATCH /api/stories/:id` · `POST /api/interviews/:id/map` · `POST /api/competencies/:id/prompts` · `POST /api/competencies/:id/draft-story` · `POST /api/interviews/:id/prep` · `POST /api/events` · `DELETE /api/session` · `GET /api/admin/review`, `GET /api/admin/metrics`.
+`POST /api/session/start` · `POST /api/interviews` (JD → competencies + questions) · `POST /api/interviews/pdf-text` (raw PDF → extracted text; not stored) · `POST /api/audio/sign` (returns signed upload URL) · `POST /api/attempts` (create) · `POST /api/attempts/:id/transcribe` · `POST /api/attempts/:id/followup` · `POST /api/attempts/:id/analyse` · `GET /api/attempts/:id` (status + results, polled) · `POST /api/points/:id/rate` · `POST /api/stories` ({title, text} → one STAR story) · `PATCH /api/stories/:id` ({ready?, title?, rawText?}) · `DELETE /api/stories/:id` · `POST /api/interviews/:id/map` · `POST /api/competencies/:id/prompts` · `POST /api/competencies/:id/draft-story` · `POST /api/interviews/:id/prep` · `POST /api/events` · `DELETE /api/session` · `GET /api/admin/review`, `GET /api/admin/metrics`.
 Exact request/response types live in `app/src/lib/contracts.ts` (Zod schemas shared by client and server) once built; **that file is the source of truth, this list is the index.**
 
 ### 6. AI behaviour and guardrails (module contracts)
@@ -109,7 +109,7 @@ Exact request/response types live in `app/src/lib/contracts.ts` (Zod schemas sha
 |---|---|---|
 | Competencies from JD | 4–6 `{label, jd_quote}` | `jd_quote` is a substring of the JD (normalised whitespace); reject otherwise |
 | Questions | per competency one behavioural question + `jd_quote` | question type whitelist (behavioural/fit); no "case", "estimate", "market size" patterns |
-| Story structuring | `{situation, decision, result}` each with `source_span` + per-sentence `actor` | span exists; **G-NO-INVENT**: every digit run and capitalised entity in output appears in source; fields are quotes or minimal trims, not paraphrase |
+| Story structuring (STAR, 2026-11-22) | one story: `sentences[{text,start,end,part,actor}]`; code re-splits the text and only borrows labels from model sentences found verbatim; unlabelled sentences join the previous part | span exists; **G-NO-INVENT**: every digit run and capitalised entity in output appears in source; fields are quotes or minimal trims, not paraphrase |
 | Follow-up | `{question, quote}` | `quote` is a verbatim phrase from the answer transcript |
 | Fit feedback | `{answered_question, competency_shown, points:[{check_id, message, quote}]}` | each `quote` found in transcript (fuzzy match tolerance only for whitespace/punctuation) → timestamp from word list; failing points dropped and counted; message must not contain a rewrite (reject if it contains > 12 consecutive words from the transcript plus an imperative like "say" / "try saying") |
 | Delivery metrics | computed in code from words + decision sentence index | none needed |
@@ -118,7 +118,7 @@ Exact request/response types live in `app/src/lib/contracts.ts` (Zod schemas sha
 Prompts live in `app/src/lib/ai/prompts/*.md` (one file per task, versioned by a header). Treat all user text (JD, CV, stories, transcripts) as **data inside delimiters**, never as instructions; schema-only outputs; no tools beyond the output schema.
 
 ### 7. Events (all PF3 data; props never contain user text)
-Arrived: `session_started`. Got the value: `first_feedback_viewed`, `feedback_viewed`, `story_marked_ready`, `gap_story_filled`, `prep_list_viewed`. Came back: `session_returned` (fired when `last_seen_at` is > 12 h old). Funnel and quality: `interview_added`, `questions_shown`, `recording_started`, `attempt_transcribed`, `followup_shown`, `retry_started`, `retry_feedback_viewed`, `compare_viewed` (added Phase 3), `point_marked_not_useful`, `story_added`, `bodylang_fakedoor_clicked`, `data_deleted`, `error_shown`.
+Arrived: `session_started`. Got the value: `first_feedback_viewed`, `feedback_viewed`, `story_marked_ready`, `gap_story_filled`, `prep_list_viewed`. Came back: `session_returned` (fired when `last_seen_at` is > 12 h old). Funnel and quality: `interview_added`, `questions_shown`, `recording_started`, `attempt_transcribed`, `followup_shown`, `retry_started`, `retry_feedback_viewed`, `compare_viewed` (added Phase 3), `point_marked_not_useful`, `story_added`, `story_deleted` (2026-11-22, props `{source}`), `bodylang_fakedoor_clicked`, `data_deleted`, `error_shown`.
 Who records what (added 2026-11-13, Phase 1): outcome events are recorded **server-side** where the outcome happens; the browser may only send the allow-listed view/click events in `CLIENT_EVENT_NAMES` (`app/src/modules/events/events.ts`) via `POST /api/events`, so metrics cannot be inflated from the client.
 Metric definitions (admin page): *time to first feedback* = `first_feedback_viewed.at − session_started.at` · *retry rate* = sessions with `retry_started` ÷ sessions with `feedback_viewed` · *stories ready* = stories with `ready` ÷ stories · *gaps filled* = `gap_story_filled` per session · *week-2 return* = sessions with `session_returned` on day 7–14 ÷ sessions older than 7 days.
 

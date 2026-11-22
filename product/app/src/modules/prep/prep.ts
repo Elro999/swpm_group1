@@ -1,4 +1,5 @@
 import type { CompetencyMapRow, StoryRow } from "@/lib/db/types";
+import { storyName } from "@/modules/stories/star";
 
 /**
  * Light prep list (PRD PL1, PL2). Deterministic and DERIVED, not stored: it is rebuilt from the current
@@ -35,7 +36,7 @@ export interface PrepInput {
   readyAttempts: Map<string, number>;
   competencies: { id: string; label: string }[];
   mapping: CompetencyMapRow[];
-  stories: Pick<StoryRow, "id" | "state" | "decision" | "situation" | "rawText">[];
+  stories: Pick<StoryRow, "id" | "state" | "title" | "rawText">[];
 }
 
 export interface PrepList {
@@ -79,7 +80,7 @@ export function buildPrepList(input: PrepInput): PrepList {
         kind: "story",
         refId: story.id,
         title: `Rehearse your story for “${labelOf.get(m.competencyId) ?? "this skill"}”, then mark it ready`,
-        detail: snippet(story.decision?.text ?? story.situation?.text ?? story.rawText),
+        detail: snippet(storyName(story)),
         href: `/stories?from=${input.interviewId}`,
         minutes: BLOCK_MINUTES,
         when: "",

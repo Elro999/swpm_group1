@@ -48,7 +48,7 @@ export interface SessionReview {
     interviewDate: string | null;
     questions: { text: string; attempts: ReviewAttempt[] }[];
   }[];
-  stories: Pick<StoryRow, "id" | "state" | "source" | "rawText" | "decision">[];
+  stories: Pick<StoryRow, "id" | "state" | "source" | "rawText" | "title">[];
 }
 
 async function attemptsFor(repo: Repo, interviewId: string) {
@@ -100,7 +100,7 @@ export async function buildSessionReview(repo: Repo, sessionId: string): Promise
         questions: await attemptsFor(repo, iv.id),
       })),
     ),
-    stories: (await repo.stories.listBySession(sessionId)).map(({ id, state, source, rawText, decision }) => ({ id, state, source, rawText, decision })),
+    stories: (await repo.stories.listBySession(sessionId)).map(({ id, state, source, rawText, title }) => ({ id, state, source, rawText, title })),
   };
 }
 

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { addStory } from "./fixtures/stories";
 import { SAMPLE_JD } from "../src/lib/sample";
 
 // Phase 5: a user with no stories finds gaps → CV → prompts that point at their CV → answer → a draft story
@@ -53,8 +54,10 @@ test("no stories → gaps → CV → prompts from the CV → draft story fills t
 
   // The draft appears in the story bank, flagged by source, and nothing was added to it.
   await page.goto("/stories");
-  const decision = await page.getByTestId("story-card").first().getByTestId("field-decision").locator("q").innerText();
-  expect(ANSWER).toContain(decision.trim());
+  const card = page.getByTestId("story-card").first();
+  await card.getByRole("button", { name: /The pricing experiment/ }).click(); // no title: named by its first words
+  const action = await card.getByTestId("star-action").locator("q").first().innerText();
+  expect(ANSWER).toContain(action.trim());
 });
 
 test("prep list: 20-minute blocks spread over the days left, updating as stories become ready", async ({ page }) => {
@@ -70,10 +73,11 @@ test("prep list: 20-minute blocks spread over the days left, updating as stories
 
   // Add a story that matches, match it: a story task appears first.
   await page.getByRole("link", { name: "Add my stories" }).click();
-  await page.getByLabel("Paste one or more stories").fill(
-    "Our checkout lost small merchants every month. I decided to run discovery interviews with merchants and turned the insights into requirements. Drop-off fell by 18% in one quarter.",
+  await addStory(
+    page,
+    "Checkout drop-off",
+    "Our checkout lost small merchants every month. My goal was to cut drop-off before the next quarter. I decided to run discovery interviews with merchants and turned the insights into requirements. Drop-off fell by 18% in one quarter.",
   );
-  await page.getByRole("button", { name: "Add to my stories" }).click();
   await expect(page.getByTestId("story-card")).toHaveCount(1);
   await page.goto(hubUrl);
   await page.getByRole("button", { name: "Match my stories to this role" }).click();
@@ -82,6 +86,7 @@ test("prep list: 20-minute blocks spread over the days left, updating as stories
 
   // Mark it ready: the story task disappears and progress goes up (PL2).
   await page.goto("/stories");
+  await page.getByRole("button", { name: /Checkout drop-off/ }).click();
   await page.getByRole("button", { name: "Mark ready" }).click();
   await expect(page.getByTestId("story-state")).toHaveText("Ready");
   await page.goto(hubUrl);

@@ -13,19 +13,8 @@ type Handler<K extends LlmTask> = (input: LlmTaskMap[K]["input"]) => LlmTaskMap[
 const VAGUE = /\b(helped|worked on|involved|various|several|some|a lot|improved|supported|we)\b/i;
 const DECISION = /\b(decided|chose|recommended|proposed|pushed for|I picked|I made the call)\b/i;
 
-/** Split text into blank-line-separated blocks, keeping each block's offset in the original. */
-function blocksOf(text: string): { text: string; offset: number }[] {
-  const out: { text: string; offset: number }[] = [];
-  const re = /\n\s*\n/g;
-  let last = 0;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(text))) {
-    out.push({ text: text.slice(last, m.index), offset: last });
-    last = m.index + m[0].length;
-  }
-  out.push({ text: text.slice(last), offset: last });
-  return out.filter((b) => b.text.trim());
-}
+const STAR_TASK = /\b(my (task|goal|job|role|responsibility|objective|target) (was|is)|I was (asked|tasked|responsible)|I (needed|had) to|our goal was|the goal was|the task was)\b/i;
+const STAR_RESULT = /(\d|\b(results?|resulted|outcomes?|fell|rose|dropped|grew|increased|reduced|improved|saved|launched|won|achieved|led to)\b)/i;
 
 const handlers: { [K in LlmTask]: Handler<K> } = {
   competencies({ jd }) {
@@ -96,32 +85,24 @@ const handlers: { [K in LlmTask]: Handler<K> } = {
     };
   },
 
+  // STAR by keywords and position: task words → task; numbers / outcome words late in the story → result;
+  // "I"/"we" doing something → action; everything before the first task or action → situation.
   story_structure({ text }) {
-    const stories = blocksOf(text)
-      .slice(0, 10)
-      .map(({ text: block, offset }) => {
-        const sents = splitSentences(block).map((s) => ({ ...s, start: s.start + offset, end: s.end + offset }));
-        const decision = sents.find((s) => DECISION.test(s.text)) ?? null;
-        const result = sents.length > 1 ? sents[sents.length - 1] : null;
-        return {
-          situation: sents[0],
-          decision,
-          result,
-          sentences: sents.map((s) => {
-            const isWe = /\bwe\b/i.test(s.text);
-            const actor: "team" | "own" | "unclear" = isWe ? "team" : /\bI\b/.test(s.text) ? "own" : "unclear";
-            const flags: ("we" | "no_evidence")[] = [];
-            if (isWe) flags.push("we");
-            if (!/\d/.test(s.text)) flags.push("no_evidence");
-            return { start: s.start, end: s.end, actor, flags };
-          }),
-        };
-      })
-      .filter((s) => s.situation);
-    if (stories.length) return { stories };
-    const t = text.trim();
-    const start = text.indexOf(t);
-    return { stories: [{ situation: { text: t, start, end: start + t.length }, decision: null, result: null, sentences: [] }] };
+    const sents = splitSentences(text);
+    let seenWork = false;
+    return {
+      sentences: sents.map((s, i) => {
+        const late = i >= Math.max(1, Math.floor(sents.length / 2));
+        const actor: "team" | "own" | "unclear" = /\bwe\b/i.test(s.text) ? "team" : /\bI\b/.test(s.text) ? "own" : "unclear";
+        let part: "situation" | "task" | "action" | "result";
+        if (STAR_TASK.test(s.text)) part = "task";
+        else if (late && STAR_RESULT.test(s.text)) part = "result";
+        else if (actor !== "unclear" && (seenWork || i > 0)) part = "action";
+        else part = seenWork ? "action" : "situation";
+        if (part === "task" || part === "action") seenWork = true;
+        return { text: s.text, start: s.start, end: s.end, part, actor };
+      }),
+    };
   },
 
   // Keyword overlap between each competency's JD quote and each story; reason = the story sentence that overlaps.

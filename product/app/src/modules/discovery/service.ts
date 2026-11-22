@@ -5,7 +5,8 @@ import { withAiCall } from "@/modules/ai/log";
 import type { LlmProvider } from "@/modules/ai/types";
 import { recordEvent } from "@/modules/events/events";
 import { findInventions } from "@/modules/stories/guard";
-import { addStories } from "@/modules/stories/service";
+import { addStory } from "@/modules/stories/service";
+import { keySentence } from "@/modules/stories/star";
 
 /**
  * Gap discovery (PRD SD1, SD2): when a JD competency has no story, prompt the user with questions that
@@ -116,7 +117,7 @@ export async function gapPrompts(deps: Deps, sessionId: string, competencyId: st
 
 /**
  * SD2: the user's answer becomes a draft story ("from your answer"), built only from their words
- * (verbatim spans via addStories), and fills this competency's gap with a verbatim reason.
+ * (sorted into STAR via addStory), and fills this competency's gap with a verbatim reason.
  */
 export async function draftStoryFromAnswer(
   deps: Deps,
@@ -125,9 +126,9 @@ export async function draftStoryFromAnswer(
   answer: string,
 ): Promise<{ story: StoryRow; mapping: CompetencyMapRow }> {
   const { competency } = await loadOwnedCompetency(deps.repo, competencyId, sessionId);
-  const [story] = await addStories(deps, sessionId, answer, "discovery");
+  const story = await addStory(deps, sessionId, { text: answer }, "discovery");
   const reason =
-    story.decision?.text ?? story.situation?.text ?? splitSentences(story.rawText)[0]?.text ?? firstWords(story.rawText, 12);
+    keySentence(story) ?? splitSentences(story.rawText)[0]?.text ?? firstWords(story.rawText, 12);
   // The reason must be the user's own words; this always holds for spans, and is re-checked here.
   const loc = locateQuote(story.rawText, reason);
   const mapping: CompetencyMapRow = {

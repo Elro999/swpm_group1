@@ -110,6 +110,10 @@ export function createMemoryRepo(): Repo {
         Object.assign(row, clone(patch), { updatedAt: new Date() });
         return clone(row);
       },
+      async delete(id) {
+        s.stories.delete(id);
+        for (const [k, m] of s.competencyMap) if (m.storyId === id) s.competencyMap.delete(k); // mirrors ON DELETE CASCADE
+      },
     },
     competencyMap: {
       async replace(competencyIds, rows) {

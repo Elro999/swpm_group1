@@ -34,6 +34,8 @@ function toStory(r: Record<string, unknown>): StoryRow {
     id: r.id as string,
     sessionId: r.session_id as string,
     rawText: r.raw_text as string,
+    title: (r.title as string | null) ?? null,
+    format: (r.format as StoryRow["format"]) ?? "sdr",
     source: r.source as StoryRow["source"],
     state: r.state as StoryRow["state"],
     situation: span("situation"),
@@ -48,6 +50,8 @@ function toStory(r: Record<string, unknown>): StoryRow {
 function storyColumns(p: StoryPatch, current?: StoryRow): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   if (p.rawText !== undefined) out.raw_text = p.rawText;
+  if (p.title !== undefined) out.title = p.title;
+  if (p.format !== undefined) out.format = p.format;
   if (p.source !== undefined) out.source = p.source;
   if (p.state !== undefined) out.state = p.state;
   if (p.sentences !== undefined) out.sentences = p.sentences;
@@ -212,6 +216,9 @@ export function createSupabaseRepo(url: string, serviceRoleKey: string): Repo {
           "stories.update",
         );
         return toStory(data as Db);
+      },
+      async delete(id) {
+        check(await db.from("stories").delete().eq("id", id), "stories.delete");
       },
     },
     competencyMap: {
