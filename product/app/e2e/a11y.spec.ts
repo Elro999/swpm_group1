@@ -26,8 +26,11 @@ test("every main screen passes the automated accessibility scan", async ({ page 
   await page.getByRole("button", { name: "Create my questions" }).click();
   await expect(page).toHaveURL(/\/i\/[0-9a-f-]{36}$/);
   await scan(page, "interview hub (before consent)");
-  await page.getByRole("button", { name: "I agree, let me practise" }).click();
-  await page.getByRole("button", { name: "Find stories for this role" }).click();
+  await page.getByRole("button", { name: "Practise question 2" }).click();
+  await expect(page.getByRole("button", { name: "I agree, back to Q2" })).toBeFocused();
+  await scan(page, "interview hub (consent asked from Q2)");
+  await page.getByRole("button", { name: "I agree, back to Q2" }).click();
+  await expect(page.getByRole("link", { name: "Practise question 2" })).toBeFocused();
   await expect(page.getByTestId("gap").first()).toBeVisible();
   await scan(page, "interview hub (gaps, prep list)");
 

@@ -33,19 +33,22 @@ const btnDanger =
 export function StoryCard({
   story,
   open,
+  startEditing: editFirst = false,
   onToggle,
   onChange,
   onDeleted,
 }: {
   story: StoryView;
   open: boolean;
+  /** Open in edit mode (set by "Edit this story" after Build story; the card is remounted to apply it). */
+  startEditing?: boolean;
   onToggle: () => void;
   onChange: (s: StoryView) => void;
   onDeleted: (s: StoryView) => void;
 }) {
   const hydrated = useHydrated();
   const id = useId();
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(editFirst);
   const [draftTitle, setDraftTitle] = useState(story.title ?? "");
   const [draftText, setDraftText] = useState(story.rawText);
   const [busy, setBusy] = useState(false);

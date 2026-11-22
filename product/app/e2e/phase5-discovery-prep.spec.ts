@@ -2,8 +2,9 @@ import { expect, test, type Page } from "@playwright/test";
 import { addStory } from "./fixtures/stories";
 import { SAMPLE_JD } from "../src/lib/sample";
 
-// Phase 5: a user with no stories finds gaps → CV → prompts that point at their CV → answer → a draft story
-// in their words fills the gap; the prep list is derived and updates as stories become ready.
+// Phase 5 (role page cards since 2026-11-22, design/01): every question card shows prompts from the user's CV;
+// "Build story" opens My stories with a guide and links the story back when it fits; the prep list is derived
+// and updates as stories become ready.
 
 const CV = `Business analyst, retail analytics team, 2021–2024
 Built a weekly sales dashboard for regional managers
@@ -19,45 +20,54 @@ async function createInterview(page: Page, date?: string) {
   await expect(page).toHaveURL(/\/i\/[0-9a-f-]{36}$/);
 }
 
-test("no stories → gaps → CV → prompts from the CV → draft story fills the gap", async ({ page }) => {
+test("cards: CV prompts on every question, Build story → guided My stories → linked back to the question", async ({ page }) => {
   await createInterview(page);
-  await page.getByRole("button", { name: "Find stories for this role" }).click();
-  const gaps = page.getByTestId("gap");
-  await expect(gaps.first()).toBeVisible();
-  const gapCount = await gaps.count();
-  expect(gapCount).toBeGreaterThanOrEqual(4); // every competency is a gap with no stories (G3)
+  const hubUrl = page.url();
+  const cards = page.getByTestId("question-card");
+  // No CV, no stories: every card is a gap with a way to write a story.
+  await expect(cards.first().getByTestId("gap")).toBeVisible();
+  await expect(page.getByTestId("story-strip")).toContainText("No saved stories yet");
 
-  const first = page.getByTestId("competency").first();
-  await first.getByRole("button", { name: "Find a story for this" }).click();
-  await first.getByLabel(/Paste your CV or list your past roles/).fill(CV);
-  await first.getByRole("button", { name: "Save and show prompts" }).click();
-
-  const prompts = first.getByTestId("gap-prompt");
-  await expect(prompts.first()).toBeVisible();
-  expect(await prompts.count()).toBeGreaterThanOrEqual(3);
-  // Each prompt points at a real line of the CV (quoted inside the prompt).
-  for (const text of await prompts.allInnerTexts()) {
-    const quoted = text.match(/[“"]([^”"]+)[”"]/)?.[1];
+  // Add a CV from the strip: every card gets prompts quoting real CV lines, with no extra click.
+  await page.getByText("Add your CV to see lines from it on each question").click();
+  await page.getByLabel("Your CV or past roles (pasted text)").fill(CV);
+  await page.getByRole("button", { name: "Save CV" }).click();
+  const first = cards.first();
+  await expect(first.getByTestId("cv-prompt").first()).toBeVisible();
+  await expect(first.getByTestId("card-status")).toHaveText(/from your CV/);
+  const n = await cards.count();
+  for (let i = 0; i < n; i++) {
+    const prompt = cards.nth(i).getByTestId("cv-prompt").first();
+    const quoted = (await prompt.innerText()).match(/[“"]([^”"]+)[”"]/)?.[1];
     expect(quoted && CV.includes(quoted)).toBeTruthy();
   }
 
-  await prompts.first().click();
-  await first.getByLabel("Your answer, in your own words").fill(ANSWER);
-  await first.getByRole("button", { name: "Turn into a draft story" }).click();
+  // Build story → My stories with the guide; the CV line starts the story; the URL holds IDs only.
+  await first.getByRole("link", { name: /Build a story for question 1/ }).first().click();
+  await expect(page).toHaveURL(/\/stories\?from=[0-9a-f-]{36}&q=[0-9a-f-]{36}&prompt=[0-9a-f-]{36}$/);
+  const guide = page.getByTestId("build-guide");
+  await expect(guide).toContainText("Building a story for Q1");
+  await expect(guide).toContainText("Situation:");
+  await expect(guide).toContainText("Task:");
+  const cvLine = (await guide.locator("blockquote").innerText()).replace(/^From your CV: “/, "").replace(/”$/, "");
+  await expect(page.getByLabel("Your story", { exact: true })).toHaveValue(`${cvLine} `);
+  await expect(page.getByRole("link", { name: "← Back to Q1" })).toBeVisible();
 
-  // The gap is filled with a draft story built from the user's own words.
-  await expect(first.getByTestId("mapped-story")).toBeVisible();
-  await expect(first.getByTestId("mapped-story")).toContainText("Draft, from your answer");
-  const reason = (await first.getByText(/Why it fits/).innerText()).replace(/^Why it fits: “/, "").replace(/”$/, "");
-  expect(ANSWER).toContain(reason);
-  await expect(page.getByTestId("gap")).toHaveCount(gapCount - 1);
+  // Write it so it shows the card's skill (the mock model matches on shared words).
+  await page.goto(hubUrl);
+  const jd = (await first.getByTestId("jd-quote").innerText()).replace(/^From the JD: “/, "").replace(/”$/, "");
+  await first.getByRole("link", { name: /Build a story for question 1/ }).first().click();
+  await page.getByLabel("Title", { exact: true }).fill("Pricing test");
+  await page.getByLabel("Your story", { exact: true }).fill(`${ANSWER} My task was this: ${jd}`);
+  await page.getByRole("button", { name: "Save story" }).click();
+  const outcome = page.getByTestId("build-outcome");
+  await expect(outcome).toContainText("Linked to Q1");
+  const why = (await outcome.getByText(/Why it fits/).innerText()).replace(/^Why it fits: “/, "").replace(/”$/, "");
+  expect(`${ANSWER} My task was this: ${jd}`).toContain(why);
 
-  // The draft appears in the story bank, flagged by source, and nothing was added to it.
-  await page.goto("/stories");
-  const card = page.getByTestId("story-card").first();
-  await card.getByRole("button", { name: /The pricing experiment/ }).click(); // no title: named by its first words
-  const action = await card.getByTestId("star-action").locator("q").first().innerText();
-  expect(ANSWER).toContain(action.trim());
+  await outcome.getByRole("link", { name: "Back to Q1" }).click();
+  await expect(first.getByTestId("card-status")).toHaveText("Story matched");
+  await expect(first.getByTestId("mapped-story")).toContainText("Pricing test");
 });
 
 test("prep list: 20-minute blocks spread over the days left, updating as stories become ready", async ({ page }) => {
@@ -72,16 +82,16 @@ test("prep list: 20-minute blocks spread over the days left, updating as stories
   expect(await prep.getByTestId("prep-item").count()).toBeGreaterThanOrEqual(3);
 
   // Add a story that matches, match it: a story task appears first.
-  await page.getByRole("link", { name: "Add my stories" }).click();
+  await page.getByRole("link", { name: "Add your first story" }).click();
   await addStory(
     page,
     "Checkout drop-off",
     "Our checkout lost small merchants every month. My goal was to cut drop-off before the next quarter. I decided to run discovery interviews with merchants and turned the insights into requirements. Drop-off fell by 18% in one quarter.",
   );
   await expect(page.getByTestId("story-card")).toHaveCount(1);
-  await page.goto(hubUrl);
-  await page.getByRole("button", { name: "Match my stories to this role" }).click();
+  await page.goto(hubUrl); // first visit with stories: matching runs on its own
   await expect(page.getByTestId("mapped-story").first()).toBeVisible();
+  await page.reload();
   await expect(prep.getByTestId("prep-item").first()).toContainText("Rehearse your story");
 
   // Mark it ready: the story task disappears and progress goes up (PL2).

@@ -47,3 +47,8 @@
 - **What:** After consent given from a Practise press, the page scrolls back to that question's card, outlines it, shows a "Press Practise to start" note and moves focus to its Practise button. The consent button now reads "I agree, back to Q<n>".
 - **Why:** Agreeing left the user at the top of the page, so they had to scroll back down to find the question they had chosen.
 - **Files:** `01_merged-question-cards.md`, `01_merged-question-cards.dc.html`
+
+## 2026-11-22: Rohith via Claude
+- **What:** Built design 01 in the product (details in `product/log.md`) and marked the spec as built. Differences from the spec: the Build story guide asks Situation / Task / Action / Result (My stories now uses STAR) instead of situation / decision / result; the save button is "Save story" and a title is required (both from the STAR redesign); a matched story's chip reads Ready or Draft from the story's state; "Match again" may link the story to whichever question it fits; a small "Add your CV" fold-out sits in the story strip, since cards need a CV for prompts; the unsaved-text case on My stories is not built (the box starts with the CV line).
+- **Why:** Rohith asked to build Addyant's proposal and check it against the STAR changes.
+- **Files:** `01_merged-question-cards.md`, `log.md`

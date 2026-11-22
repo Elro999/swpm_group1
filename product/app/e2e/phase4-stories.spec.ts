@@ -102,34 +102,76 @@ test("delete asks first; cancel keeps the story, confirm removes it", async ({ p
   await expect(page.getByTestId("story-card")).toHaveCount(1);
 });
 
-test("hub: match stories so every competency has a story or a gap", async ({ page }) => {
+test("role page: stories match on the first visit; Open, Change, Unlink and Match again on a card", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Try with a sample JD" }).click();
   await page.getByRole("button", { name: "Create my questions" }).click();
   await expect(page).toHaveURL(/\/i\/[0-9a-f-]{36}$/);
   const hubUrl = page.url();
 
-  await page.getByRole("link", { name: "Add my stories" }).click();
+  await page.getByRole("link", { name: "Add your first story" }).click();
   await expect(page.getByRole("link", { name: /Back to Associate Product Manager/ })).toBeVisible();
   await addStory(page, "Checkout drop-off", MATCHING_STORY);
   await addStory(page, "Topic vote", NO_TASK_STORY);
-  await expect(page.getByTestId("story-card")).toHaveCount(2);
 
   await page.getByRole("link", { name: "Match them to the interview →" }).click();
   await expect(page).toHaveURL(hubUrl);
-  await page.getByRole("button", { name: "Match my stories to this role" }).click();
-
-  const comps = page.getByTestId("competency");
-  await expect(page.getByTestId("mapped-story").first()).toBeVisible();
-  const n = await comps.count();
+  // Matching runs by itself on the first visit; every card shows a story or its suggestions / a gap.
+  const matched = page.getByTestId("mapped-story").first();
+  await expect(matched).toBeVisible();
+  await expect(page.getByTestId("strip-note")).toContainText(/Matched \d+ of \d+ questions/);
+  const cards = page.getByTestId("question-card");
+  const n = await cards.count();
   for (let i = 0; i < n; i++) {
-    const c = comps.nth(i);
-    // G3: every competency shows a mapped story or a flagged gap; none left "not matched".
-    expect((await c.getByTestId("mapped-story").count()) + (await c.getByTestId("gap").count())).toBe(1);
+    const c = cards.nth(i);
+    expect((await c.getByTestId("mapped-story").count()) + (await c.getByTestId("gap").count()) + (await c.getByTestId("saved-suggestion").count())).toBe(1);
   }
   // The reason shown for a match is the user's own words.
-  const why = await page.getByTestId("mapped-story").first().getByText(/Why it fits/).innerText();
+  const why = await matched.getByText(/Why it fits/).innerText();
   expect(MATCHING_STORY).toContain(why.replace(/^Why it fits: “/, "").replace(/”$/, ""));
+
+  // Change → pick the other story: "Chosen by you".
+  let at = 0;
+  while ((await cards.nth(at).getByTestId("mapped-story").count()) === 0) at++;
+  const card = cards.nth(at); // fixed position: a filter would move to another card once this one is unlinked
+  await card.getByRole("button", { name: "Change" }).click();
+  await expect(card.getByText("In use")).toBeVisible();
+  await card.getByRole("button", { name: "Topic vote" }).click();
+  await expect(card.getByTestId("mapped-story")).toContainText("Chosen by you");
+  await expect(card.getByTestId("mapped-story")).toContainText("Topic vote");
+
+  // Unlink: the story stays saved and comes back as a suggestion; the strip offers Match again.
+  await card.getByRole("button", { name: "Change" }).click();
+  await card.getByRole("button", { name: "Unlink this story" }).click();
+  await expect(card.getByTestId("mapped-story")).toHaveCount(0);
+  await expect(card.getByTestId("saved-suggestion")).toContainText("Topic vote");
+  await expect(page.getByTestId("story-strip")).toContainText("Unlinked “Topic vote”.");
+
+  // Use this story links it back by hand.
+  await card.getByRole("button", { name: "Use this story" }).click();
+  await expect(card.getByTestId("mapped-story")).toContainText("Topic vote");
+
+  // Unlink again, then Match again checks just that story (it may link it to whichever question it fits).
+  await card.getByRole("button", { name: "Change" }).click();
+  await card.getByRole("button", { name: "Unlink this story" }).click();
+  await expect(card.getByTestId("saved-suggestion")).toContainText("Topic vote");
+  await page.getByRole("button", { name: "Match again" }).click();
+  await expect(page.getByTestId("strip-note")).toContainText("Checked again");
+  await expect(page.getByTestId("story-strip")).not.toContainText("Unlinked “Topic vote”.");
+
+  // Open goes to a matched story on My stories, opened.
+  const open = page.getByTestId("mapped-story").first();
+  const name = (await open.locator("span.font-medium").first().innerText()).trim();
+  await open.getByRole("link", { name: "Open" }).click();
+  await expect(page).toHaveURL(/\/stories\?from=[0-9a-f-]{36}&open=[0-9a-f-]{36}$/);
+  await expect(page.getByRole("button", { name: new RegExp(name) })).toHaveAttribute("aria-expanded", "true");
+
+  // A story added later shows "Match new story" instead of re-matching everything.
+  await addStory(page, "Search speed", "Our search was slow for merchants. My task was to speed it up. I chose to cache the queries. Load time dropped by 40%.");
+  await page.goto(hubUrl);
+  await expect(page.getByTestId("story-strip")).toContainText("1 new story since the last match.");
+  await page.getByRole("button", { name: "Match new story" }).click();
+  await expect(page.getByTestId("strip-note")).toContainText("Checked your new story");
 });
 
 test("another visitor cannot change or delete my story", async ({ page, browser }) => {

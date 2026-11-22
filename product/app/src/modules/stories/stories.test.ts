@@ -7,7 +7,7 @@ import type { LlmProvider, LlmResult } from "@/modules/ai/types";
 import { createInterview } from "@/modules/interview/service";
 import { SAMPLE_JD, SAMPLE_STORY } from "@/test/fixtures";
 import { findInventions } from "./guard";
-import { addStory, deleteStory, mapStories, StoryError, updateStory } from "./service";
+import { addStory, deleteStory, linkBuiltStory, mapStories, matchStories, setCompetencyStory, StoryError, updateStory } from "./service";
 import { missingParts, starGroups, storyName } from "./star";
 import { structureStar } from "./structure";
 
@@ -232,5 +232,94 @@ describe("review fixes: no stale evidence", () => {
     await updateStory({ repo, llm }, sessionId, story.id, { rawText: "At a hackathon I chose to build a small bot for reminders and it won second place overall." });
     const after = await repo.competencyMap.listByCompetencies(ids);
     expect(after.every((r) => r.isGap && r.storyId === null && r.rationaleQuote === null)).toBe(true);
+  });
+});
+
+describe("role page cards: scoped matching, Change / Unlink, Build story (design/01)", () => {
+  const OTHER = "In a college project the team could not agree on a topic. My task was to unblock it. I ran a quick vote. We moved on the same day.";
+  async function setup() {
+    const repo = createMemoryRepo();
+    const llm = createMockLlm();
+    const sessionId = (await repo.sessions.create("h")).id;
+    const { interview, competencies } = await createInterview({ repo, llm }, sessionId, { jd: SAMPLE_JD, cv: null, interviewDate: null });
+    return { repo, llm, sessionId, interview, competencies };
+  }
+
+  it("matching only fills cards without a story and records when it ran", async () => {
+    const { repo, llm, sessionId, interview } = await setup();
+    const story = await addStory({ repo, llm }, sessionId, { title: "Checkout", text: CHECKOUT });
+    const first = await matchStories({ repo, llm }, sessionId, interview.id);
+    expect(first.linked.length).toBeGreaterThan(0);
+    expect((await repo.interviews.findForSession(interview.id, sessionId))!.matchedAt).not.toBeNull();
+
+    // A second run may fill a card that is still empty, but never changes one that was matched.
+    const before = first.rows.filter((r) => !r.isGap);
+    const second = await matchStories({ repo, llm }, sessionId, interview.id);
+    for (const r of before) expect(second.linked).not.toContain(r.competencyId);
+    for (const r of before) expect(second.rows.find((x) => x.competencyId === r.competencyId)).toMatchObject({ storyId: story.id });
+  });
+
+  it("a story the user picked is never replaced by automatic matching", async () => {
+    const { repo, llm, sessionId, interview, competencies } = await setup();
+    const picked = await addStory({ repo, llm }, sessionId, { title: "Vote", text: OTHER });
+    const c = competencies[0];
+    const row = await setCompetencyStory({ repo }, sessionId, c.id, picked.id);
+    expect(row).toMatchObject({ storyId: picked.id, chosenByUser: true, rationaleQuote: null });
+    await addStory({ repo, llm }, sessionId, { title: "Checkout", text: CHECKOUT });
+    await matchStories({ repo, llm }, sessionId, interview.id);
+    const [after] = await repo.competencyMap.listByCompetencies([c.id]);
+    expect(after).toMatchObject({ storyId: picked.id, chosenByUser: true });
+  });
+
+  it("unlink removes only the link; Match again checks just that story", async () => {
+    const { repo, llm, sessionId, interview } = await setup();
+    const story = await addStory({ repo, llm }, sessionId, { title: "Checkout", text: CHECKOUT });
+    const { linked } = await matchStories({ repo, llm }, sessionId, interview.id);
+    const cid = linked[0];
+    await setCompetencyStory({ repo }, sessionId, cid, null);
+    expect((await repo.competencyMap.listByCompetencies([cid]))[0]).toMatchObject({ storyId: null, isGap: true });
+    expect(await repo.stories.findForSession(story.id, sessionId)).not.toBeNull(); // the story stays
+    const again = await matchStories({ repo, llm }, sessionId, interview.id, { storyIds: [story.id] });
+    expect(again.checked).toBe(1);
+    expect(again.linked).toContain(cid);
+  });
+
+  it("new stories stay 'new' until a match has checked them", async () => {
+    const { repo, llm, sessionId, interview } = await setup();
+    const a = await addStory({ repo, llm }, sessionId, { title: "Checkout", text: CHECKOUT });
+    await matchStories({ repo, llm }, sessionId, interview.id);
+    const matchedAt = (await repo.interviews.findForSession(interview.id, sessionId))!.matchedAt!;
+    await new Promise((r) => setTimeout(r, 5));
+    const b = await addStory({ repo, llm }, sessionId, { title: "Vote", text: OTHER });
+    expect(b.createdAt.getTime()).toBeGreaterThan(matchedAt.getTime());
+    await matchStories({ repo, llm }, sessionId, interview.id, { storyIds: [a.id] }); // does not cover b
+    expect((await repo.interviews.findForSession(interview.id, sessionId))!.matchedAt!.getTime()).toBe(matchedAt.getTime());
+    await matchStories({ repo, llm }, sessionId, interview.id, { storyIds: [b.id] });
+    expect((await repo.interviews.findForSession(interview.id, sessionId))!.matchedAt!.getTime()).toBeGreaterThan(matchedAt.getTime());
+  });
+
+  it("Build story links a fitting story to its question only, with a verbatim reason; a misfit is saved but not linked", async () => {
+    const { repo, llm, sessionId, interview, competencies } = await setup();
+    const mapped = await (async () => {
+      const s = await addStory({ repo, llm }, sessionId, { title: "Checkout", text: CHECKOUT });
+      const r = await matchStories({ repo, llm }, sessionId, interview.id, { storyIds: [s.id] });
+      await deleteStory({ repo, llm }, sessionId, s.id);
+      return r.linked[0];
+    })();
+    const fresh = await addStory({ repo, llm }, sessionId, { title: "Checkout again", text: CHECKOUT });
+    const link = await linkBuiltStory({ repo, llm }, sessionId, fresh.id, mapped);
+    expect(link).not.toBeNull();
+    expect(CHECKOUT).toContain(link!.rationaleQuote!);
+    expect(await repo.events.list({ sessionId, name: "gap_story_filled" })).toHaveLength(1);
+    const others = competencies.filter((c) => c.id !== mapped).map((c) => c.id);
+    expect((await repo.competencyMap.listByCompetencies(others)).some((r) => r.storyId === fresh.id)).toBe(false);
+
+    const misfit = await addStory({ repo, llm }, sessionId, { title: "Vote", text: "Zzz qqq vvv www. My task was xxx. I did yyy. It ended zzz." });
+    const unlinked = competencies.find((c) => c.id !== mapped)!;
+    expect(await linkBuiltStory({ repo, llm }, sessionId, misfit.id, unlinked.id)).toBeNull();
+
+    const stranger = (await repo.sessions.create("o")).id;
+    await expect(linkBuiltStory({ repo, llm }, stranger, fresh.id, mapped)).rejects.toMatchObject({ status: 404 });
+    await expect(setCompetencyStory({ repo }, stranger, mapped, null)).rejects.toMatchObject({ status: 404 });
   });
 });

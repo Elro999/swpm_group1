@@ -64,8 +64,8 @@ Grouped by deck module. IDs match the deck's feature IDs (MF, SB, SD, PL) so tes
 - US-2.5 (SB5) As Abhinav, I want a guarantee that nothing is added to my story (ownership, numbers, outcomes) so that I sound like myself, not ChatGPT.
 
 ### Module 3: Story discovery (SD1–SD2)
-- US-3.1 (SD1) As Abhinav, when a JD ask has no story, I want 3–5 prompts drawn from my CV and past roles so that I can find a story I could not see.
-- US-3.2 (SD2) As Abhinav, I want my answer to a prompt turned into a draft story in my bank with nothing invented so that I can practise it straight away.
+- US-3.1 (SD1) As Abhinav, I want each question card to show up to 4 prompts drawn from my CV, without clicking, so that I can find a story I could not see. *Amended 2026-11-22 (design/01): was 3–5 prompts per gap, on click.*
+- US-3.2 (SD2) As Abhinav, I want "Build story" to take me to My stories with the question and CV line as a guide, and link the story back to the question when it fits, with nothing invented. *Amended 2026-11-22: was a typed answer turned into a draft story on the role page.*
 
 ### Module 4: Prep list, light (PL1–PL2)
 - US-4.1 (PL1) As Abhinav, given an interview date and JD, I want 3–5 stories and questions to rehearse in 20-minute blocks so that I know what to do in the gaps between case prep.
@@ -136,8 +136,9 @@ Acceptance criteria use Given / When / Then. Each requirement also needs a negat
 - Not: a number, outcome, scope or title appearing in a card that is not in the user's text (guard in capability doc).
 
 **SD1–SD2 Gap discovery**
-- Given a gap, then 3–5 prompts that reference the user's CV / roles are shown (if no CV was given, the user is asked to paste one first).
-- Given the user's answer (text or voice), then a draft story is added to the bank, flagged "draft, from your answer", containing only what they said.
+- Given a CV, then every question card shows 0–4 prompts that quote real CV lines, made once on the first visit and saved; the best one shows, the rest fold away. Without a CV the strip offers to add one; a card with no prompt and no story shows an amber Gap note.
+- Given "Build story", then My stories opens with a guide (the question, the CV line, Situation / Task / Action / Result) and the CV line as the first sentence; the URL carries IDs only. After saving, the story is checked against that question's competency only: linked with a verbatim "why it fits" and "Back to Q<n>", or saved and not linked with what is missing.
+- Role page (design/01, 2026-11-22): one card per question (competency chip, status: Story matched / N from your CV / Gap), matched story with Open and Change (pick another, "Chosen by you"; Unlink keeps the story), Practise always visible (before consent it opens the consent banner and returns to that question). Matching runs once on the first visit with stories; later only "Match new story" / "Match again" checks, which never replace a match or a story the user picked. "What this role tests" is removed.
 
 **PL1–PL2 Prep list**
 - Given JD, stories and an interview date, then a list of 3–5 items in 20-minute blocks is shown (stories to rehearse, questions to practise); marking a story ready regenerates the list. No notifications.

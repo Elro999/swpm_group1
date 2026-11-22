@@ -5,6 +5,7 @@ import type {
   AttemptPatch,
   AttemptRow,
   CompetencyMapRow,
+  CompetencyPromptRow,
   CompetencyRow,
   EventRow,
   FeedbackMetricsRow,
@@ -85,12 +86,21 @@ const toSession = (r: SessionDb): SessionRow => ({
 
 type Db = Record<string, unknown>;
 
+const toPrompt = (r: Db): CompetencyPromptRow => ({
+  id: r.id as string,
+  competencyId: r.competency_id as string,
+  ord: r.ord as number,
+  text: r.text as string,
+  refs: (r.refs as string[]) ?? [],
+});
+
 const toInterview = (r: Db): InterviewRow => ({
   id: r.id as string,
   sessionId: r.session_id as string,
   jdText: r.jd_text as string,
   cvText: (r.cv_text as string | null) ?? null,
   interviewDate: (r.interview_date as string | null) ?? null,
+  matchedAt: r.matched_at ? new Date(r.matched_at as string) : null,
   createdAt: new Date(r.created_at as string),
 });
 
@@ -227,7 +237,9 @@ export function createSupabaseRepo(url: string, serviceRoleKey: string): Repo {
         if (!rows.length) return;
         check(
           await db.from("competency_map").insert(
-            rows.map((r: CompetencyMapRow) => ({ competency_id: r.competencyId, story_id: r.storyId, is_gap: r.isGap, rationale_quote: r.rationaleQuote })),
+            rows.map((r: CompetencyMapRow) => ({
+              competency_id: r.competencyId, story_id: r.storyId, is_gap: r.isGap, rationale_quote: r.rationaleQuote, chosen_by_user: r.chosenByUser ?? false,
+            })),
           ),
           "competencyMap.replace(insert)",
         );
@@ -240,11 +252,20 @@ export function createSupabaseRepo(url: string, serviceRoleKey: string): Repo {
           storyId: (r.story_id as string | null) ?? null,
           isGap: Boolean(r.is_gap),
           rationaleQuote: (r.rationale_quote as string | null) ?? null,
+          chosenByUser: Boolean(r.chosen_by_user),
         }));
+      },
+      async set(r) {
+        check(
+          await db.from("competency_map").upsert({
+            competency_id: r.competencyId, story_id: r.storyId, is_gap: r.isGap, rationale_quote: r.rationaleQuote, chosen_by_user: r.chosenByUser ?? false,
+          }),
+          "competencyMap.set",
+        );
       },
       async invalidateStory(storyId) {
         check(
-          await db.from("competency_map").update({ story_id: null, is_gap: true, rationale_quote: null }).eq("story_id", storyId),
+          await db.from("competency_map").update({ story_id: null, is_gap: true, rationale_quote: null, chosen_by_user: false }).eq("story_id", storyId),
           "competencyMap.invalidateStory",
         );
       },
@@ -363,6 +384,29 @@ export function createSupabaseRepo(url: string, serviceRoleKey: string): Repo {
       async setCv(id, cvText) {
         const data = check(await db.from("interviews").update({ cv_text: cvText }).eq("id", id).select().single(), "interviews.setCv");
         return toInterview(data as Db);
+      },
+      async setMatchedAt(id, at) {
+        check(await db.from("interviews").update({ matched_at: at.toISOString() }).eq("id", id), "interviews.setMatchedAt");
+      },
+    },
+    competencyPrompts: {
+      async replace(competencyId, prompts) {
+        check(await db.from("competency_prompts").delete().eq("competency_id", competencyId), "competencyPrompts.replace(delete)");
+        if (!prompts.length) return [];
+        const data = check(
+          await db.from("competency_prompts").insert(prompts.map((p, ord) => ({ competency_id: competencyId, ord, text: p.text, refs: p.refs }))).select(),
+          "competencyPrompts.replace(insert)",
+        );
+        return (data as Db[]).map(toPrompt).sort((a, b) => a.ord - b.ord);
+      },
+      async listByCompetencies(ids) {
+        if (!ids.length) return [];
+        const data = check(await db.from("competency_prompts").select().in("competency_id", ids).order("ord"), "competencyPrompts.listByCompetencies");
+        return (data as Db[]).map(toPrompt).sort((a, b) => ids.indexOf(a.competencyId) - ids.indexOf(b.competencyId) || a.ord - b.ord);
+      },
+      async findById(id) {
+        const data = check(await db.from("competency_prompts").select().eq("id", id).maybeSingle(), "competencyPrompts.findById");
+        return data ? toPrompt(data as Db) : null;
       },
     },
     competencies: {

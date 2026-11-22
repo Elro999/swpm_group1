@@ -72,11 +72,11 @@ Provider choice and keys (Q1) · consent text and retention (Q2) · whether Whis
 |---|---|---|
 | `/` | Landing: one-line value, "Start" (creates session), sample-JD shortcut | PF1, PF6 |
 | `/interviews/new` | Paste JD, optional date, optional CV | US-0.2 |
-| `/i/[id]` | Interview hub: questions, competency map (stories vs gaps), prep list | MF1, SB4, PL |
+| `/i/[id]` | Role page (design/01): consent banner, story strip, one card per question (story or CV prompts, Practise), prep list | MF1, SB4, SD1, PL |
 | `/i/[id]/mock/[qid]` | Record answer → transcript → follow-up → record follow-up → feedback | MF2–MF5 |
 | `/i/[id]/mock/[qid]/compare` | Retry and before-vs-after | MF6 |
 | `/stories` | Story bank: one story per save with a title, collapsed STAR cards, team/own split in Action, ready toggle, edit (title + text), delete with confirmation | SB1–SB3 |
-| `/i/[id]/gaps/[competencyId]` | Discovery prompts and draft-story creation | SD1–SD2 |
+| `/stories?from&q&prompt` | "Build story": guide for one question and CV line (IDs only in the URL) | SD2 |
 | `/privacy` | What is recorded, who processes it, retention, delete | PF2 |
 | `/admin` | Review queue, per-session replay, metrics | PF4, PF5 |
 
@@ -86,7 +86,8 @@ Provider choice and keys (Q1) · consent text and retention (Q2) · whether Whis
 - `competencies` (id, interview_id, label, jd_quote, jd_quote_start, jd_quote_end, ord)
 - `questions` (id, interview_id, competency_id, text, jd_quote, ord)
 - `stories` (id, session_id, raw_text, **title** (≤ 80, migration 0005), **format** `star|sdr` (0005), source `pasted|discovery`, state `draft|structured|ready`, situation, decision, result, spans jsonb (sdr stories only), sentences jsonb `[{start,end,actor:'own'|'team'|'unclear',flags[],part?:'situation'|'task'|'action'|'result'}]`, created_at, updated_at)
-- `competency_map` (competency_id, story_id nullable, is_gap bool, rationale_quote)
+- `competency_map` (competency_id, story_id nullable, is_gap bool, rationale_quote, **chosen_by_user** bool (0006))
+- `competency_prompts` (id, competency_id, ord, text, refs jsonb of verbatim CV lines) (0006); `interviews.matched_at` (0006)
 - `attempts` (id, question_id, attempt_no, status, answer_audio_key, answer_words jsonb `[{w,start,end}]`, answer_text, followup_text, followup_quote, followup_audio_key, followup_words jsonb, error, created_at) with unique(question_id, attempt_no)
 - `feedback_points` (id, attempt_id, check_id, kind `delivery|fit`, severity, message, quote, quote_start_ms, quote_end_ms, created_at)
 - `feedback_metrics` (attempt_id, time_to_decision_ms, i_count, we_count, duration_ms, answered_question bool, competency_shown bool)
@@ -101,7 +102,7 @@ Provider choice and keys (Q1) · consent text and retention (Q2) · whether Whis
 - **Session:** `active → deleted`. Deletion removes rows and audio; token stops working.
 
 ### 5. Interfaces (server routes; JSON in, JSON out; all require the session cookie except `/api/session/start` and `/api/admin/*` which use the admin cookie)
-`POST /api/session/start` · `POST /api/interviews` (JD → competencies + questions) · `POST /api/interviews/pdf-text` (raw PDF → extracted text; not stored) · `POST /api/audio/sign` (returns signed upload URL) · `POST /api/attempts` (create) · `POST /api/attempts/:id/transcribe` · `POST /api/attempts/:id/followup` · `POST /api/attempts/:id/analyse` · `GET /api/attempts/:id` (status + results, polled) · `POST /api/points/:id/rate` · `POST /api/stories` ({title, text} → one STAR story) · `PATCH /api/stories/:id` ({ready?, title?, rawText?}) · `DELETE /api/stories/:id` · `POST /api/interviews/:id/map` · `POST /api/competencies/:id/prompts` · `POST /api/competencies/:id/draft-story` · `POST /api/interviews/:id/prep` · `POST /api/events` · `DELETE /api/session` · `GET /api/admin/review`, `GET /api/admin/metrics`.
+`POST /api/session/start` · `POST /api/interviews` (JD → competencies + questions) · `POST /api/interviews/pdf-text` (raw PDF → extracted text; not stored) · `POST /api/audio/sign` (returns signed upload URL) · `POST /api/attempts` (create) · `POST /api/attempts/:id/transcribe` · `POST /api/attempts/:id/followup` · `POST /api/attempts/:id/analyse` · `GET /api/attempts/:id` (status + results, polled) · `POST /api/points/:id/rate` · `POST /api/stories` ({title, text} → one STAR story) · `PATCH /api/stories/:id` ({ready?, title?, rawText?}) · `DELETE /api/stories/:id` · `POST /api/interviews/:id/map` ({storyIds?}: scoped; fills only cards without a story) · `POST /api/interviews/:id/prompts` (make and save card prompts once) · `PUT /api/competencies/:id/story` ({storyId | null}: Change / Unlink) · `POST /api/stories` also takes `forCompetencyId` (Build story) · `POST /api/interviews/:id/prep` · `POST /api/events` · `DELETE /api/session` · `GET /api/admin/review`, `GET /api/admin/metrics`.
 Exact request/response types live in `app/src/lib/contracts.ts` (Zod schemas shared by client and server) once built; **that file is the source of truth, this list is the index.**
 
 ### 6. AI behaviour and guardrails (module contracts)

@@ -5,9 +5,8 @@ import type { CompetencyRow, InterviewRow, Repo } from "@/lib/db/types";
 import { createMockLlm } from "@/modules/ai/mock/llm";
 import type { LlmProvider, LlmResult } from "@/modules/ai/types";
 import { createInterview } from "@/modules/interview/service";
-import { mapStories } from "@/modules/stories/service";
 import { SAMPLE_CV, SAMPLE_JD } from "@/test/fixtures";
-import { DiscoveryError, draftStoryFromAnswer, fallbackPrompts, gapPrompts, saveCv, verifyPrompts } from "./service";
+import { DiscoveryError, ensureCardPrompts, fallbackPrompts, loadBuildContext, saveCv, verifyPrompts } from "./service";
 
 function scriptedPrompts(outputs: LlmTaskMap["gap_prompts"]["output"][]): LlmProvider {
   const real = createMockLlm();
@@ -39,12 +38,12 @@ describe("verifyPrompts (SD1: prompts must point at the user's own CV)", () => {
   });
   it("fallback prompts are built from CV lines, verbatim", () => {
     const ps = fallbackPrompts(SAMPLE_CV, "Handling ambiguity");
-    expect(ps.length).toBeGreaterThanOrEqual(3);
+    expect(ps.length).toBeGreaterThanOrEqual(2);
     for (const p of ps) for (const r of p.references) expect(SAMPLE_CV).toContain(r);
   });
 });
 
-describe("gap discovery service", () => {
+describe("card prompts and Build story context (SD1, design/01)", () => {
   let repo: Repo;
   let sessionId: string;
   let interview: InterviewRow;
@@ -58,57 +57,74 @@ describe("gap discovery service", () => {
     competency = created.competencies[0];
   });
 
-  it("asks for a CV before prompting, and validates it", async () => {
-    await expect(gapPrompts({ repo, llm: createMockLlm() }, sessionId, competency.id)).rejects.toMatchObject({ status: 409 });
+  const asked = async () => {
+    const qs = await repo.questions.listByInterview(interview.id);
+    return [...new Set(qs.map((q) => q.competencyId).filter((x): x is string => Boolean(x)))];
+  };
+
+  it("makes no prompts (and no AI call) without a CV, and validates a CV", async () => {
+    const before = (await repo.aiCalls.list({ sessionId })).length;
+    expect(await ensureCardPrompts({ repo, llm: createMockLlm() }, sessionId, interview.id)).toBe(0);
+    expect(await repo.aiCalls.list({ sessionId })).toHaveLength(before);
     await expect(saveCv({ repo }, sessionId, interview.id, "short")).rejects.toBeInstanceOf(DiscoveryError);
     const saved = await saveCv({ repo }, sessionId, interview.id, `  ${SAMPLE_CV}  `);
     expect(saved.cvText).toBe(SAMPLE_CV);
   });
 
-  it("returns 3–5 prompts that reference real CV lines (mock model)", async () => {
+  it("saves 2–4 prompts per question's competency, quoting real CV lines, once", async () => {
     await saveCv({ repo }, sessionId, interview.id, SAMPLE_CV);
-    const prompts = await gapPrompts({ repo, llm: createMockLlm() }, sessionId, competency.id);
-    expect(prompts.length).toBeGreaterThanOrEqual(3);
-    expect(prompts.length).toBeLessThanOrEqual(5);
-    for (const p of prompts) for (const r of p.references) expect(SAMPLE_CV).toContain(r);
+    const ids = await asked();
+    expect(await ensureCardPrompts({ repo, llm: createMockLlm() }, sessionId, interview.id)).toBe(ids.length);
+    const prompts = await repo.competencyPrompts.listByCompetencies(ids);
+    for (const id of ids) {
+      const mine = prompts.filter((p) => p.competencyId === id);
+      expect(mine.length).toBeGreaterThanOrEqual(2);
+      expect(mine.length).toBeLessThanOrEqual(4);
+      for (const p of mine) for (const r of p.refs) expect(SAMPLE_CV).toContain(r);
+    }
+    const calls = (await repo.aiCalls.list({ sessionId })).length;
+    expect(await ensureCardPrompts({ repo, llm: createMockLlm() }, sessionId, interview.id)).toBe(0); // cached
+    expect(await repo.aiCalls.list({ sessionId })).toHaveLength(calls);
   });
 
-  it("falls back to CV-based prompts when the model keeps inventing", async () => {
+  it("drops invented prompts and tops up from CV lines", async () => {
     await saveCv({ repo }, sessionId, interview.id, SAMPLE_CV);
     const llm = scriptedPrompts([{ prompts: [
       { text: "At Google, what did you decide?", references: ["Google, 2019"] },
       { text: "At Meta, what did you decide?", references: ["Meta"] },
       { text: "At Netflix, what did you decide?", references: ["Netflix"] },
     ] }]);
-    const prompts = await gapPrompts({ repo, llm }, sessionId, competency.id);
-    expect(prompts.length).toBeGreaterThanOrEqual(3);
+    await ensureCardPrompts({ repo, llm }, sessionId, interview.id);
+    const prompts = await repo.competencyPrompts.listByCompetencies(await asked());
+    expect(prompts.length).toBeGreaterThan(0);
     for (const p of prompts) {
       expect(p.text).not.toMatch(/Google|Meta|Netflix/);
-      for (const r of p.references) expect(SAMPLE_CV).toContain(r);
+      for (const r of p.refs) expect(SAMPLE_CV).toContain(r);
     }
-    expect((await repo.aiCalls.list({ sessionId })).filter((c) => c.purpose === "gap_prompts")).toHaveLength(2); // one retry
   });
 
-  it("turns an answer into a draft story in the user's words and fills the gap (SD2)", async () => {
-    await mapStories({ repo, llm: createMockLlm() }, sessionId, interview.id); // everything is a gap
-    const answer = "The pricing experiment hit a supplier delay. I decided to move the test to 20 different stores. We still finished on time.";
-    const { story, mapping } = await draftStoryFromAnswer({ repo, llm: createMockLlm() }, sessionId, competency.id, answer);
-
-    expect(story.source).toBe("discovery");
-    expect(answer).toContain(story.rawText);
-    expect(mapping).toMatchObject({ competencyId: competency.id, storyId: story.id, isGap: false });
-    expect(answer).toContain(mapping.rationaleQuote!);
-    const [row] = await repo.competencyMap.listByCompetencies([competency.id]);
-    expect(row.isGap).toBe(false);
-    expect(await repo.events.list({ sessionId, name: "gap_story_filled" })).toHaveLength(1);
+  it("a new CV clears the saved prompts so they are made again", async () => {
+    await saveCv({ repo }, sessionId, interview.id, SAMPLE_CV);
+    await ensureCardPrompts({ repo, llm: createMockLlm() }, sessionId, interview.id);
+    await saveCv({ repo }, sessionId, interview.id, "Ran the campus fundraising event for two years with a team of ten.");
+    expect(await repo.competencyPrompts.listByCompetencies(await asked())).toHaveLength(0);
   });
 
-  it("only the owner can prompt, save a CV, or fill a gap", async () => {
+  it("Build story context is looked up from IDs, for the owner only", async () => {
+    await saveCv({ repo }, sessionId, interview.id, SAMPLE_CV);
+    await ensureCardPrompts({ repo, llm: createMockLlm() }, sessionId, interview.id);
+    const q = (await repo.questions.listByInterview(interview.id))[0];
+    const [prompt] = await repo.competencyPrompts.listByCompetencies([q.competencyId!]);
+    const ctx = await loadBuildContext({ repo }, sessionId, { interviewId: interview.id, questionId: q.id, promptId: prompt.id });
+    expect(ctx).toMatchObject({ questionNo: 1, questionText: q.text, competencyId: q.competencyId, prompt: { id: prompt.id, cvLine: prompt.refs[0] } });
+
     const other = (await repo.sessions.create("o")).id;
-    await expect(gapPrompts({ repo, llm: createMockLlm() }, other, competency.id)).rejects.toMatchObject({ status: 404 });
+    expect(await loadBuildContext({ repo }, other, { interviewId: interview.id, questionId: q.id, promptId: prompt.id })).toBeNull();
+    await expect(ensureCardPrompts({ repo, llm: createMockLlm() }, other, interview.id)).rejects.toMatchObject({ status: 404 });
     await expect(saveCv({ repo }, other, interview.id, SAMPLE_CV)).rejects.toMatchObject({ status: 404 });
-    await expect(
-      draftStoryFromAnswer({ repo, llm: createMockLlm() }, other, competency.id, "A long enough answer that would otherwise become a story."),
-    ).rejects.toMatchObject({ status: 404 });
+    // A prompt from another competency is ignored.
+    const q2 = (await repo.questions.listByInterview(interview.id)).find((x) => x.competencyId !== q.competencyId)!;
+    expect((await loadBuildContext({ repo }, sessionId, { interviewId: interview.id, questionId: q2.id, promptId: prompt.id }))?.prompt).toBeNull();
+    void competency;
   });
 });
