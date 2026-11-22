@@ -62,3 +62,13 @@
 - **What:** Added a CV PDF upload to the add-interview form (details in `product/log.md`).
 - **Why:** The user asked for it.
 - **Files:** `product/` (see `product/log.md`), `log.md`
+
+## 2026-11-21: Addyant via Claude Code
+- **What:** Added `design/` (merged question cards proposal for the role page, with its own `instructions.md` and `log.md`) and listed it in the folder map in `instructions.md`.
+- **Why:** Propose merging "Questions to practise" and "What this role tests" into one card per question.
+- **Files:** `design/` (4 files), `instructions.md`, `log.md`
+
+## 2026-11-22: Rohith via Claude
+- **What:** Merged Addyant's `side-branch` (design proposal in `design/`) with `main` on branch `claude/focused-volta-tdzy4u`. Resolved two conflicts by keeping both sides: the folder map in `instructions.md` lists both `product/` and `design/`; this log keeps every entry from both branches (Addyant's 2026-11-21 entry sits after the entries that were already on `main`).
+- **Why:** Rohith asked to bring `side-branch` into `main`; it was based on an older `main`, so the same lines had changed on both sides.
+- **Files:** `instructions.md`, `log.md`, `design/` (from `side-branch`, unchanged)
