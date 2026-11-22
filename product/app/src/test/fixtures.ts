@@ -9,6 +9,10 @@ export const SAMPLE_STORIES = `At my last company we were losing small customers
 
 In a college project the team could not agree on a topic. We discussed it for a week. I chose to run a quick vote and we moved on.`;
 
+/** One STAR story (situation, task, action, result), for the one-story-per-save story bank. */
+export const SAMPLE_STORY =
+  "At my last company we were losing small customers after the first month. My goal was to find out why within one quarter. I interviewed twelve of them myself and proposed a simpler onboarding flow. Churn fell by 18% in one quarter.";
+
 export const SAMPLE_CV = `Business analyst, retail analytics team, 2021–2024
 Built a weekly sales dashboard for regional managers
 Led a pricing experiment across 40 stores

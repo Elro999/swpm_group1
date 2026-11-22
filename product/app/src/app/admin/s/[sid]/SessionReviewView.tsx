@@ -83,6 +83,7 @@ export async function SessionReviewView({ params }: { params: Promise<{ sid: str
         <h2 className={ui.h2}>Stories ({review.stories.length})</h2>
         {review.stories.map((s) => (
           <div key={s.id} className={`${ui.card} text-sm`}>
+            {s.title && <p className="font-medium">{s.title}</p>}
             <p className={ui.muted}>
               {s.state} · {s.source}
             </p>

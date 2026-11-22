@@ -17,7 +17,7 @@ Product goals (deck slide 15; all P0):
 | G1 | First pinned feedback within **5 minutes of landing, with no sign-up** | event `first_feedback_viewed` minus `session_started` (per session) |
 | G2 | **Every feedback point cites a timestamped line** from the user's own answer | server-side check: each point has a verbatim quote found in the transcript; 100% or the point is dropped |
 | G3 | **Every JD competency shows a mapped story or a flagged gap** | check on the competency map: no competency without `story_id` or `gap=true` |
-| G4 | Stories restructured **decision first**, team vs own actions split | structured fields present on every story marked ready |
+| G4 | Stories sorted into **STAR** (Situation, Task, Action, Result) from the user's own sentences, team vs own actions split. *Amended 2026-11-22 (Rohith): was "decision first"; STAR is what interviewers and the team's course material expect* | all four STAR parts present on every story marked ready |
 | G5 | The AI **never adds** ownership, numbers or outcomes the user did not say | automated guard (§ capability doc, G-NO-INVENT) + teammate review of the first 5 users |
 | G6 | **Every retry shows before vs after** on the same checks | retry view renders the same check set for both attempts |
 
@@ -57,8 +57,8 @@ Grouped by deck module. IDs match the deck's feature IDs (MF, SB, SD, PL) so tes
 - US-1.7 (MF7) As Abhinav, I want to mark any feedback point "not useful" so that bad feedback is flagged, not silently trusted.
 
 ### Module 2: Story builder (SB1–SB5)
-- US-2.1 (SB1) As Abhinav, I want to paste stories or a doc into a story bank so that all my material is in one place.
-- US-2.2 (SB2) As Abhinav, I want each story restated decision first (one-line situation, my decision, result, in my words) so that the listener hears my decision early.
+- US-2.1 (SB1) As Abhinav, I want to write one story at a time, with a title, into a story bank so that all my material is in one place and easy to find. I can rename or delete a story later.
+- US-2.2 (SB2) As Abhinav, I want each story sorted into STAR (Situation, Task, Action, Result), in my words, with missing parts asked as questions, so that I tell it in the order interviewers expect. *Amended 2026-11-22: was decision first.*
 - US-2.3 (SB3) As Abhinav, I want team vs my own actions split, with "we" and unsupported claims flagged, so that I can own what I did without overclaiming.
 - US-2.4 (SB4) As Abhinav, I want 4–6 JD competencies, quoted from the JD, mapped to my stories with gaps shown so that I know which story to use for which ask.
 - US-2.5 (SB5) As Abhinav, I want a guarantee that nothing is added to my story (ownership, numbers, outcomes) so that I sound like myself, not ChatGPT.
@@ -127,8 +127,11 @@ Acceptance criteria use Given / When / Then. Each requirement also needs a negat
 - Given any feedback point, when marked "not useful" (optional reason), then it is stored and appears in the review queue.
 
 **SB1–SB5 Story bank**
-- Given pasted text (one or many stories), then it is split into stories, each shown as decision-first card: situation (1 line), decision, result, each as the user's own words with the source span highlighted in the original.
-- Given a story, then each sentence is labelled team vs own action; "we" statements and claims without evidence (no number/outcome) are flagged, never auto-fixed.
+- Given a title (1–80 characters) and one story (40–20,000 characters; blank lines do not split it), then one story is saved and every sentence is sorted into exactly one STAR part, shown verbatim. A part with no sentence is shown as a question from the STAR rule (e.g. Task: "What did you need to accomplish? What were your responsibilities or goals?"), never as suggested wording.
+- The bank shows collapsed cards (title, S·T·A·R progress, status: Missing …, Complete, Ready); a story can be marked ready only when all four parts are present.
+- Given a story, the user can edit its title and text (the text is re-sorted and ready is cleared) or delete it after confirming in a dialog; its competency matches go with it.
+- Stories saved before 2026-11-22 keep their decision-first view until edited, which re-sorts them into STAR.
+- Given a story, then each Action sentence is labelled You / Team / Unclear; "we" in Action and Result claims without evidence (no number) are flagged, never auto-fixed.
 - Given a JD, then 4–6 competencies are extracted, each shown with the exact JD quote, mapped to the best story or marked a gap.
 - Not: a number, outcome, scope or title appearing in a card that is not in the user's text (guard in capability doc).
 

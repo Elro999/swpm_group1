@@ -25,8 +25,12 @@ quote = the exact vague phrase from the answer (3–12 words). The question must
 - decision_sentence_index: index (0-based) into the given "sentences" array of the first sentence where the candidate states a decision THEY made; null if none.
 - points: 0–4 items, check_id one of did_not_answer, competency_not_shown, vague_claim, strong_moment. Each has severity (fix|warn|info), a message that POINTS or ASKS (never gives replacement wording), and quote: 3–12 exact words from the answer.
 Do not report timing, length or "we vs I"; those are measured elsewhere.`,
-  story_structure: `Split the text into separate stories (usually separated by blank lines). For each story give situation, decision, result as EXACT spans of the original text: {text, start, end} where text === original.slice(start, end), or null if not present. decision must be the sentence where the writer states their own choice.
-sentences: for each sentence of the story, {start, end, actor: own|team|unclear, flags: []} with offsets into the original text. Leave flags empty; they are computed elsewhere.`,
+  story_structure: `The text is ONE interview story. Sort every sentence into one STAR part:
+- situation: the context or backdrop; the challenge or opportunity being faced.
+- task: the task or objective the writer needed to accomplish; their responsibility or goal.
+- action: the specific steps the writer (or their team) took and the skills they applied.
+- result: what was achieved; the outcome and impact on the situation or task.
+sentences: one item per sentence, in order, {text, start, end, part, actor} where text === original.slice(start, end). actor: own (the writer did it: "I…"), team ("we", others) or unclear. Never rewrite, merge or add sentences. If a part is missing from the text, do not invent it: just leave it out.`,
   story_map: `For each competency, choose the ONE story that best shows it, or null if none truly does.
 story_id must be one of the given ids. rationale_quote: exact words (5–20) copied from that story that show the competency; null when story_id is null. Prefer a gap over a weak match.`,
   gap_prompts: `The candidate has no story for this competency. Write 3–5 short questions that help them recall a real moment from their CV.

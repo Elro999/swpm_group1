@@ -5,7 +5,7 @@ import { buildPrepList, type PrepInput } from "./prep";
 const today = new Date(2026, 10, 14); // 14 Nov 2026, local
 const q = (n: number) => ({ id: `q${n}`, text: `Question ${n}?` });
 const story = (id: string, state: StoryRow["state"]): PrepInput["stories"][number] => ({
-  id, state, decision: { text: `Decision in ${id}`, start: 0, end: 10 }, situation: null, rawText: `Text of ${id}`,
+  id, state, title: `Title of ${id}`, rawText: `Text of ${id}`,
 });
 const map = (competencyId: string, storyId: string | null): CompetencyMapRow => ({ competencyId, storyId, isGap: storyId === null, rationaleQuote: null });
 

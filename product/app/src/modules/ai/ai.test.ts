@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createMemoryRepo } from "@/lib/db/memory";
 import { containsQuote, splitSentences } from "@/lib/text";
-import { SAMPLE_CV, SAMPLE_JD, SAMPLE_STORIES } from "@/test/fixtures";
+import { SAMPLE_CV, SAMPLE_JD, SAMPLE_STORY } from "@/test/fixtures";
 import { withAiCall } from "./log";
 import { createMockLlm } from "./mock/llm";
 import { createMockStt } from "./mock/stt";
@@ -56,14 +56,11 @@ describe("mock LLM honours the contracts and quotes verbatim", () => {
     expect(data.competency_shown).toBe(true);
   });
 
-  it("story structure: one story per paragraph, spans point into the original text", async () => {
-    const { data } = await llm.run("story_structure", { text: SAMPLE_STORIES });
-    expect(data.stories).toHaveLength(2);
-    for (const s of data.stories) {
-      expect(SAMPLE_STORIES.slice(s.situation.start, s.situation.end)).toBe(s.situation.text);
-      if (s.decision) expect(SAMPLE_STORIES.slice(s.decision.start, s.decision.end)).toBe(s.decision.text);
-    }
-    expect(data.stories[0].sentences.some((x) => x.flags.includes("we"))).toBe(true);
+  it("story structure: sorts each sentence of one story into STAR, offsets point into the original text", async () => {
+    const { data } = await llm.run("story_structure", { text: SAMPLE_STORY });
+    for (const s of data.sentences) expect(SAMPLE_STORY.slice(s.start, s.end)).toBe(s.text);
+    expect(data.sentences.map((s) => s.part)).toEqual(["situation", "task", "action", "result"]);
+    expect(data.sentences[0].actor).toBe("team");
   });
 
   it("gap prompts reference lines that exist in the CV", async () => {

@@ -161,20 +161,30 @@ export interface StorySpan {
 
 export type StoryActor = "own" | "team" | "unclear";
 export type StoryFlag = "we" | "no_evidence";
+/** STAR: Situation, Task, Action, Result (2026-11-22). Every sentence of a STAR story belongs to exactly one part. */
+export const STAR_PARTS = ["situation", "task", "action", "result"] as const;
+export type StarPart = (typeof STAR_PARTS)[number];
 
 export interface StorySentence {
   start: number;
   end: number;
   actor: StoryActor;
   flags: StoryFlag[];
+  /** STAR stories only: which part this sentence belongs to. Absent on older (decision-first) stories. */
+  part?: StarPart;
 }
 
 export interface StoryRow {
   id: string;
   sessionId: string;
   rawText: string;
+  /** The user's own name for the story (pasted stories); null for discovery drafts and older stories. */
+  title: string | null;
+  /** "star": sentences carry a STAR part. "sdr": an older decision-first story (situation / decision / result spans). */
+  format: "star" | "sdr";
   source: "pasted" | "discovery";
   state: StoryState;
+  /** Decision-first fields: used by "sdr" stories only; null on STAR stories. */
   situation: StorySpan | null;
   decision: StorySpan | null;
   result: StorySpan | null;
@@ -255,6 +265,8 @@ export interface Repo {
     findForSession(id: string, sessionId: string): Promise<StoryRow | null>;
     listBySession(sessionId: string): Promise<StoryRow[]>; // oldest first
     update(id: string, patch: StoryPatch): Promise<StoryRow>;
+    /** Removes the story; its competency_map rows go with it (FK on delete cascade, migration 0003). */
+    delete(id: string): Promise<void>;
   };
   competencyMap: {
     /** Replace all mapping rows for these competencies (one interview's set) in one go. */

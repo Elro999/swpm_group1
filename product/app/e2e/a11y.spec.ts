@@ -50,12 +50,17 @@ test("every main screen passes the automated accessibility scan", async ({ page 
   await scan(page, "compare");
 
   await page.goto("/stories");
-  await page.getByLabel("Paste one or more stories").fill(
+  await scan(page, "stories (empty, form open)");
+  await page.getByLabel("Title", { exact: true }).fill("Checkout drop-off");
+  await page.getByLabel("Your story", { exact: true }).fill(
     "Our checkout lost small merchants every month. I decided to run discovery interviews with merchants. Drop-off fell by 18% in one quarter.",
   );
-  await page.getByRole("button", { name: "Add to my stories" }).click();
+  await page.getByRole("button", { name: "Save story" }).click();
   await expect(page.getByTestId("story-card")).toHaveCount(1);
-  await scan(page, "stories");
+  await scan(page, "stories (card open, Task missing)");
+  await page.getByRole("button", { name: "Delete" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await scan(page, "stories (delete dialog)");
 
   await page.goto("/privacy");
   await scan(page, "privacy");

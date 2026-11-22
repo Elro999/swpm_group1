@@ -74,27 +74,24 @@ export const FitFeedbackOutput = z.object({
     .max(6),
 });
 
-const span = z.object({ text: z.string().min(1), start: z.number().int().nonnegative(), end: z.number().int().nonnegative() });
 
+/**
+ * STAR (2026-11-22): ONE story per call. The model sorts each sentence into Situation, Task, Action or
+ * Result and says who acted. Code re-splits the text itself and only borrows these labels where a
+ * sentence lines up, so nothing the model writes is ever shown as the user's words.
+ */
 export const StoryStructureOutput = z.object({
-  stories: z
+  sentences: z
     .array(
       z.object({
-        situation: span,
-        decision: span.nullable(),
-        result: span.nullable(),
-        sentences: z.array(
-          z.object({
-            start: z.number().int().nonnegative(),
-            end: z.number().int().nonnegative(),
-            actor: z.enum(["own", "team", "unclear"]),
-            flags: z.array(z.enum(["we", "no_evidence"])),
-          }),
-        ),
+        text: z.string().min(1),
+        start: z.number().int().nonnegative(),
+        end: z.number().int().nonnegative(),
+        part: z.enum(["situation", "task", "action", "result"]),
+        actor: z.enum(["own", "team", "unclear"]),
       }),
     )
-    .min(1)
-    .max(10),
+    .max(200),
 });
 
 export const GapPromptsOutput = z.object({

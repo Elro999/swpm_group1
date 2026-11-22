@@ -22,7 +22,7 @@
 5. **Private by default.** No account, no name, no email. Anonymous session via cookie only (no cross-device link in v1). Recordings are deleted after 30 days, and "delete my data" works at any time.
 6. **Recoverable.** A failed step never makes the user record again; stored data lets them retry the step.
 
-**Goals (PRD, all P0):** G1 first pinned feedback within 5 minutes of landing, no sign-up · G2 every feedback point cites a timestamped line from the user's answer · G3 every JD competency shows a mapped story or a flagged gap · G4 stories restructured decision-first, own vs team actions split · G5 the AI never adds ownership, numbers or outcomes · G6 every retry shows before vs after on the same checks.
+**Goals (PRD, all P0):** G1 first pinned feedback within 5 minutes of landing, no sign-up · G2 every feedback point cites a timestamped line from the user's answer · G3 every JD competency shows a mapped story or a flagged gap · G4 stories sorted into STAR (Situation, Task, Action, Result) from the user's own sentences, own vs team actions split · G5 the AI never adds ownership, numbers or outcomes · G6 every retry shows before vs after on the same checks.
 **Success metrics (MVP hypothesis):** ≥ 60% retry after feedback · ≥ 60% of stories marked ready · ≥ 1 gap filled per user · ≥ 40% return in week 2 unprompted.
 **Out of scope:** case interviews, guesstimates and group discussions; company-specific question banks; calendar sync or a full task manager; peer or alumni matching.
 
@@ -37,8 +37,8 @@
 | Feedback | Pinned feedback: late decision / no decision, "we" vs "I", too long (code); did not answer, competency not shown, vague claim, strong moment (AI, max 4); each with a quote and a time range | **Live** |
 | Feedback | "Not useful" rating per point (feeds the review queue) | **Live** |
 | Retry | Retry a question; side-by-side compare of the same checks: fixed / still present / new / better or worse | **Live** |
-| Stories | Paste one or many stories → situation / decision / result as verbatim spans; "who did what" (You / Team / Unclear) and flags ("Says 'we'", "Result without evidence"); mark ready; edit | **Live** |
-| Stories | Nothing pasted is lost: text outside a story becomes a draft story | **Live** |
+| Stories | One story per save, with a title → every sentence sorted into Situation / Task / Action / Result (verbatim; missing parts shown as questions); Action sentences tagged You / Team / Unclear, flags ("Says 'we'", "Result without evidence"); collapsed cards with S·T·A·R progress; mark ready (needs all four parts); edit title and text; delete with a confirmation dialog | **Built 2026-11-22, not deployed** (needs migration 0005) |
+| Stories | Nothing written is lost: every sentence lands in one STAR part | **Built 2026-11-22** |
 | Matching | "Match my stories to this role": each competency → best story with a verbatim "why it fits" quote, or a **Gap**. Editing a story resets its matches to gaps | **Live** |
 | Gaps | Gap prompts: 3–5 questions quoting lines of the user's CV; the typed answer becomes a draft story that fills the gap | **Live** (typed; voice answers to gap prompts not built) |
 | Prep | Prep list: 3–5 blocks of 20 minutes, spread over the days until the interview date; rebuilt from current state | **Live** |
