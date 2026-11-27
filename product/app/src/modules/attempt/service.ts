@@ -237,7 +237,13 @@ async function advance(deps: AttemptDeps, sessionId: string, owned: OwnedQuestio
         ),
         sortStar,
       ]);
-      if (star && !a.answerStar) a = await repo.attempts.update(a.id, { answerStar: star });
+      // Storing the labels is best effort too: feedback never fails because of STAR (e.g. a database without 0007).
+      if (star && !a.answerStar) {
+        a = await repo.attempts.update(a.id, { answerStar: star }).catch((err) => {
+          console.error("saving answer STAR failed", { name: (err as Error)?.name });
+          return a;
+        });
+      }
       const built = buildFeedback(words, durationMs, res.data, { question: question.text, competency, star });
       await repo.feedback.save(a.id, built.metrics, built.points); // also marks the attempt ready, in one transaction
       a = { ...a, status: "ready", error: null };

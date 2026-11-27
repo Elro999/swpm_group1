@@ -96,3 +96,19 @@ describe("practice answer → My stories", () => {
     await expect(saveAnswerStory(deps, stranger, a.id, { mode: "new" })).rejects.toMatchObject({ status: 404 });
   });
 });
+
+describe("STAR never blocks feedback", () => {
+  it("feedback is still saved when storing the STAR labels fails", async () => {
+    const { repo, practise } = await setup();
+    const update = repo.attempts.update.bind(repo.attempts);
+    repo.attempts.update = async (id, patch) => {
+      if ("answerStar" in patch) throw new Error('column "answer_star" does not exist');
+      return update(id, patch);
+    };
+    const a = await practise();
+    expect(a.status).toBe("ready");
+    const fb = await repo.feedback.get(a.id);
+    expect(fb.points.length).toBeGreaterThan(0);
+    expect(fb.points.map((p) => p.checkId)).toContain("star_missing_task"); // labels still used for this feedback
+  });
+});
