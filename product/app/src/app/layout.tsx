@@ -39,7 +39,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               <Suspense fallback={null}>
                 <StreakChip />
               </Suspense>
-              <Link href="/stories" className="text-zinc-700 hover:underline dark:text-zinc-300">
+              <Link href="/stories" className="rounded text-zinc-700 hover:underline dark:text-zinc-300" data-tour="my-stories">
                 My stories
               </Link>
               <Link href="/privacy" className="text-zinc-600 hover:underline dark:text-zinc-400">

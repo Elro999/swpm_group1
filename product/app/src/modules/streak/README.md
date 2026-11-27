@@ -20,8 +20,8 @@
 | Place | File | What |
 |---|---|---|
 | API | `app/api/streak/route.ts` | `GET /api/streak?tz=` → `StreakSummary` for the current session (401 without one) |
-| Header | `components/streak/StreakChip.tsx` | Flame + number; filled when today counts, outlined while open, "Revive" when revivable; hidden for `none`/`broken` |
-| Hub | `components/streak/StreakCard.tsx` + `MilestoneTrack.tsx` | Headline, interview countdown, this interview's milestone (dots for each day on the way, then the interview), rest-day chip, Mon–Sun strip, calm message or revive offer, today's rep (first prep-list item), this week's prep days and reps |
+| Header | `components/streak/StreakChip.tsx` | Flame + number; filled when today counts, outlined while open, "Revive" when revivable, "Streak" for `none`/`broken`. **Since 2026-11-27 it is a button** that opens the streak card in a floating panel (Esc, outside click or the button close it; on phones it spans the screen width) |
+| Panel | `components/streak/StreakCard.tsx` (`compact`) + `MilestoneTrack.tsx` | Headline, interview countdown, the milestone of the interview whose page you are on (`/i/[id]…`), rest-day chip, Mon–Sun strip, calm message or revive offer, this week's prep days and reps. **The large card on the role page was removed on 2026-11-27** (it took the middle of the page); "today's rep" now lives only in the prep list |
 | Feedback | `components/streak/StreakToast.tsx` | After the view is recorded: "Day N. Streak kept." or how many reps a revive still needs |
 
 The views share `useStreak()` (reloads on navigation and on `refreshStreak()`).

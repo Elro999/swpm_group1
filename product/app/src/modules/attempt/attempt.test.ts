@@ -172,7 +172,7 @@ describe("exclusive processing (review fix)", () => {
     const slowLlm = {
       name: "slow",
       run: (async (task: never, input: never) => {
-        modelCalls++;
+        if (task === "fit_feedback") modelCalls++; // the feedback call (the STAR sort runs alongside it)
         await new Promise((r) => setTimeout(r, 10));
         return deps.llm.run(task, input);
       }) as typeof deps.llm.run,

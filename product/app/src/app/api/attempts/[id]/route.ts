@@ -11,5 +11,5 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/attempts/[i
   const { id } = await ctx.params;
   const owned = isUuid(id) ? await loadOwnedAttempt(getRepo(), id, session.id) : null;
   if (!owned) return jsonError(404, "That practice attempt was not found.");
-  return respondWithView(owned.attempt);
+  return respondWithView(owned.attempt, session.id);
 }

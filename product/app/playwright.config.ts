@@ -12,10 +12,21 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${PORT}`,
     trace: "retain-on-failure",
+    // The role page's first-visit tour would cover the page in every spec; mark it seen (tour.spec.ts clears it).
+    storageState: {
+      cookies: [],
+      origins: [{ origin: `http://localhost:${PORT}`, localStorage: [{ name: "tour:role-page:v1", value: "done" }] }],
+    },
   },
   // Microphone: specs that record install a test double (e2e/fixtures/fake-mic.ts). Chromium's own
   // --use-fake-device-for-media-stream hung on the build machine (sandboxed audio), so it is not relied on.
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  // PW_CHROMIUM_PATH: use a preinstalled browser when the bundled build does not match (e.g. a cloud container).
+  projects: [
+    {
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"], ...(process.env.PW_CHROMIUM_PATH ? { launchOptions: { executablePath: process.env.PW_CHROMIUM_PATH } } : {}) },
+    },
+  ],
   // Production build, not `next dev`: dev compiles each route on first request, which made early clicks
   // land before hydration and aborted requests mid-test. A build is deterministic and matches Vercel.
   webServer: {

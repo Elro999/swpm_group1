@@ -48,13 +48,13 @@ src/
     api/session/consent/  POST: record consent before any recording (PF2)
     api/interviews/       POST: JD → verified competencies + questions (MF1); pdf-text/: PDF → text (JD or CV)
     api/events/           POST: client-only view events, allow-listed (PF3)
-    api/attempts/…        Attempt lifecycle: create, view, answer/followup audio, skip, resume, viewed, audio playback
+    api/attempts/…        Attempt lifecycle: create, view, answer/followup audio, skip, resume, viewed, audio playback, story (save to My stories)
     api/points/[id]/rate/ POST: mark a feedback point not useful (MF7)
     api/stories/…         POST paste stories; PATCH :id ready / edit (SB1–SB5)
     api/interviews/[id]/map/ POST: match stories to the role's competencies, gaps flagged (SB4, G3)
     api/interviews/[id]/cv/  POST: save the CV used for gap prompts (SD1)
     api/competencies/[id]/{prompts,draft-story}/  POST: CV-based prompts; answer → draft story that fills the gap (SD1, SD2)
-  components/             Shared UI: ui.ts class strings, StartButtons, ConsentGate, Recorder, MatchStoriesButton, GapDiscovery, TrackView
+  components/             Shared UI: ui.ts class strings, StartButtons, ConsentGate, Recorder, TrackView, StarProgress (S·T·A·R marks), GuidedTour (role-page walkthrough), streak/ (header chip + floating panel)
   lib/
     env.ts                The only reader of process.env; validates modes and required keys
     contracts.ts          Zod schemas for every AI output (source of truth for shapes)

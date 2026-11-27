@@ -319,6 +319,7 @@ export function RoleCards({
               }}
               className={`${ui.card} scroll-mt-24 ${justAgreed === card.n ? "outline-2 outline-offset-2 outline-indigo-500" : ""}`}
               data-testid="question-card"
+              data-tour={card.n === 1 ? "question" : undefined}
             >
               <QuestionCard
                 card={card}

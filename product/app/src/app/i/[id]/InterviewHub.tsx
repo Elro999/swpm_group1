@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { DeleteDataButton } from "@/components/DeleteDataButton";
-import { StreakCard } from "@/components/streak/StreakCard";
+import { GuidedTour } from "@/components/GuidedTour";
 import { TrackView } from "@/components/TrackView";
 import { ui } from "@/components/ui";
 import { getRepo } from "@/lib/db";
@@ -95,9 +95,8 @@ export async function InterviewHub({ params }: { params: Promise<{ id: string }>
           {when ? `${when}. ` : ""}
           {questions.length} questions from the job description{interview.cvText ? ", each with lines from your CV that could become your answer." : "."}
         </p>
+        <GuidedTour />
       </div>
-
-      <StreakCard interviewId={interview.id} nextStep={prep.items[0] ? { title: prep.items[0].title, href: prep.items[0].href, minutes: prep.items[0].minutes } : null} />
 
       <RoleCards
         interviewId={interview.id}

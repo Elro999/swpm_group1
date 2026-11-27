@@ -1,12 +1,14 @@
 import type { LlmTaskMap } from "@/lib/contracts";
-import type { FeedbackMetricsRow, NewFeedbackPoint, TimedWord } from "@/lib/db/types";
+import type { FeedbackMetricsRow, NewFeedbackPoint, StarPart, TimedWord } from "@/lib/db/types";
 import { inventsClaims, looksLikeRewrite } from "./guards";
 import { computeDelivery, isWeForm, LATE_DECISION_MS, TARGET_MS, TOO_LONG_MS } from "./metrics";
+import { starPoints } from "./star";
 import { buildCanonical, formatMs, pinQuote, pinSentence, type Pin } from "./transcript";
 
 /**
  * Turns a transcript + the model's judgement into the feedback we store and show.
- * - Delivery checks (late_decision, no_decision, we_not_i, too_long) are generated HERE from timings.
+ * - Delivery checks (late_decision, no_decision, we_not_i, too_long) are generated HERE from timings, and so are
+ *   the STAR checks (star_missing_<part>, star_order; star.ts) from the STAR part of each sentence, when known.
  * - The model may only contribute FIT checks; each must quote the answer verbatim, not read like a rewrite, and
  *   not state a number, name or bigger role the user never said (inventsClaims; review fix 2026-11-14).
  * - Every stored point has a verbatim quote and a time range (G2). Anything that fails is dropped and counted.
@@ -30,7 +32,7 @@ export function buildFeedback(
   words: TimedWord[],
   durationMs: number,
   fit: FitOutput,
-  context: { question?: string; competency?: string } = {},
+  context: { question?: string; competency?: string; star?: StarPart[] | null } = {},
 ): BuiltFeedback {
   const c = buildCanonical(words);
   const points: NewFeedbackPoint[] = [];
@@ -70,6 +72,9 @@ export function buildFeedback(
       );
     }
   }
+
+  // --- STAR structure (code-owned, from labels on the user's own sentences) ---
+  points.push(...starPoints(c, words, context.star ?? null));
 
   // --- Fit (model-proposed, verified) ---
   const allowedSource = [c.text, context.question ?? "", context.competency ?? ""].join("\n");

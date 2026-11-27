@@ -121,7 +121,7 @@ export function MockSession({ questionId, initial }: { questionId: string; initi
 
       {v?.status === "ready" && v.feedback && (
         <>
-          <FeedbackView view={v} />
+          <FeedbackView key={v.id} view={v} />
           <section className={`${ui.card} flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between`}>
             <p>Pick one point above, fix it, and answer again.</p>
             <div className="flex flex-wrap gap-3">

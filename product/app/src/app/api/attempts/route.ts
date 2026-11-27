@@ -12,7 +12,7 @@ export async function POST(request: Request) {
   const questionId = (body as { questionId?: unknown })?.questionId;
   if (!isUuid(questionId)) return jsonError(400, "Missing question.");
   try {
-    return respondWithView(await startAttempt(getAttemptDeps(), session, questionId), 201);
+    return respondWithView(await startAttempt(getAttemptDeps(), session, questionId), session.id, 201);
   } catch (err) {
     return attemptErrorResponse(err);
   }

@@ -9,12 +9,12 @@ import { AiQuotaError } from "@/modules/ai/log";
 import { AttemptError, type AttemptDeps } from "./service";
 import { buildAttemptView } from "./view";
 
-/** Respond with the client view of an attempt. */
-export async function respondWithView(attempt: AttemptRow, status = 200): Promise<NextResponse> {
+/** Respond with the client view of an attempt (the session links it to My stories). */
+export async function respondWithView(attempt: AttemptRow, sessionId: string, status = 200): Promise<NextResponse> {
   const repo = getRepo();
   const question = await repo.questions.findById(attempt.questionId);
   if (!question) return jsonError(404, "That question was not found.");
-  return json(await buildAttemptView(repo, attempt, question), status);
+  return json(await buildAttemptView(repo, attempt, question, sessionId), status);
 }
 
 /** Production wiring for the attempt pipeline (tests build their own deps). */

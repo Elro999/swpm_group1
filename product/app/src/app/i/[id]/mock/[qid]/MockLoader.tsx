@@ -22,7 +22,7 @@ export async function MockLoader({ params }: { params: Promise<{ id: string; qid
 
   const attempts = await repo.attempts.listByQuestion(qid);
   const latest = attempts.at(-1);
-  const initial = latest ? await buildAttemptView(repo, latest, owned.question) : null;
+  const initial = latest ? await buildAttemptView(repo, latest, owned.question, session.id) : null;
   const competency = owned.question.competencyId
     ? (await repo.competencies.listByInterview(id)).find((c) => c.id === owned.question.competencyId)
     : undefined;

@@ -117,6 +117,10 @@ export interface AttemptRow {
   followupAudioKey: string | null;
   followupAudioMime: string | null;
   followupWords: TimedWord[] | null;
+  /** STAR part of each canonical answer sentence (index = sentence index), from the user's own words; null when not sorted (older attempts, or the sort failed). Migration 0007. */
+  answerStar: StarPart[] | null;
+  /** The My stories entry this answer was saved to or combined into (migration 0007); null until then. */
+  storyId: string | null;
   /** Human-readable reason when status = "failed". Never contains user text. */
   error: string | null;
   createdAt: Date;
@@ -184,7 +188,7 @@ export interface StoryRow {
   title: string | null;
   /** "star": sentences carry a STAR part. "sdr": an older decision-first story (situation / decision / result spans). */
   format: "star" | "sdr";
-  source: "pasted" | "discovery";
+  source: "pasted" | "discovery" | "practice";
   state: StoryState;
   /** Decision-first fields: used by "sdr" stories only; null on STAR stories. */
   situation: StorySpan | null;

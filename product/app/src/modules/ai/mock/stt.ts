@@ -5,7 +5,8 @@ import type { SttProvider } from "../types";
  * Deterministic mock speech-to-text (AI_MODE=mock). Ignores the audio and returns a SYNTHETIC answer
  * (no participant data) with realistic word timings. First attempts have the two most common defects
  * from the research (decision arrives late; "we" instead of "I"); retries return an improved answer,
- * so the before-vs-after screen has something to show in demos and E2E tests.
+ * so the before-vs-after screen has something to show in demos and E2E tests. STAR (2026-11-27): the first
+ * answer has no Task (a STAR gap to show); the retry tells all four parts in order.
  */
 
 const FIRST_ATTEMPT =
@@ -18,8 +19,9 @@ const FIRST_ATTEMPT =
 const RETRY =
   "I decided to recommend a lower entry price for the first quarter of the launch. " +
   "The situation was a new product line where the team was split on pricing. " +
+  "My task was to set the launch price within a month. " +
   "I ran the competitor comparison myself and I spoke to six customers. " +
-  "Because of that, the pilot reached its adoption target in eight weeks.";
+  "As a result, the pilot reached its adoption target in eight weeks.";
 
 const MS_PER_WORD = 380;
 const SENTENCE_PAUSE_MS = 450;

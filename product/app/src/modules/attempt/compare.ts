@@ -1,4 +1,5 @@
-import type { FeedbackMetricsRow, FeedbackPointRow } from "@/lib/db/types";
+import type { FeedbackMetricsRow, FeedbackPointRow, StarPart } from "@/lib/db/types";
+import { summariseStar } from "@/modules/feedback/star";
 import { TOO_LONG_MS } from "@/modules/feedback/metrics";
 import { formatMs } from "@/modules/feedback/transcript";
 
@@ -10,7 +11,7 @@ import { formatMs } from "@/modules/feedback/transcript";
 export type Direction = "better" | "worse" | "same";
 
 export interface MetricDelta {
-  key: "timeToDecision" | "ownership" | "length" | "answeredQuestion" | "competencyShown";
+  key: "star" | "timeToDecision" | "ownership" | "length" | "answeredQuestion" | "competencyShown";
   label: string;
   before: string;
   after: string;
@@ -29,6 +30,19 @@ export interface Comparison {
 interface Side {
   metrics: Omit<FeedbackMetricsRow, "attemptId">;
   points: FeedbackPointRow[];
+  /** STAR part per answer sentence (2026-11-27); null/absent for attempts sorted before STAR existed. */
+  star?: StarPart[] | null;
+}
+
+/** STAR as one comparable number: parts heard (0–4), minus a half for going out of order. */
+function starScore(parts: StarPart[]): number {
+  const s = summariseStar(parts);
+  return s.present.length - (s.outOfOrderAt === null ? 0 : 0.5);
+}
+function starText(parts: StarPart[] | null | undefined): string {
+  if (!parts?.length) return "not checked";
+  const s = summariseStar(parts);
+  return `${s.present.length} of 4${s.outOfOrderAt === null ? "" : ", out of order"}`;
 }
 
 const POSITIVE_CHECKS = new Set(["strong_moment"]);
@@ -70,6 +84,17 @@ export function compareAttempts(before: Side, after: Side): Comparison {
   const ownAfter = ownershipShare(a);
 
   const metrics: MetricDelta[] = [
+    ...(before.star?.length || after.star?.length
+      ? [
+          {
+            key: "star" as const,
+            label: "STAR parts",
+            before: starText(before.star),
+            after: starText(after.star),
+            direction: (before.star?.length && after.star?.length ? cmp(starScore(before.star), starScore(after.star), false) : "same") as Direction,
+          },
+        ]
+      : []),
     {
       key: "timeToDecision",
       label: "Time to your decision",
@@ -140,4 +165,9 @@ export const CHECK_LABELS: Record<string, string> = {
   competency_not_shown: "Competency not shown",
   vague_claim: "Vague claim",
   strong_moment: "Strong moment",
+  star_missing_situation: "STAR: no Situation",
+  star_missing_task: "STAR: no Task",
+  star_missing_action: "STAR: no Action",
+  star_missing_result: "STAR: no Result",
+  star_order: "STAR: out of order",
 };

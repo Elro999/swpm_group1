@@ -117,6 +117,7 @@ export function createMemoryRepo(): Repo {
       async delete(id) {
         s.stories.delete(id);
         for (const [k, m] of s.competencyMap) if (m.storyId === id) s.competencyMap.delete(k); // mirrors ON DELETE CASCADE
+        for (const a of s.attempts.values()) if (a.storyId === id) a.storyId = null; // mirrors ON DELETE SET NULL (0007)
       },
     },
     competencyMap: {
@@ -149,7 +150,7 @@ export function createMemoryRepo(): Repo {
           id: randomUUID(), questionId, attemptNo, status: "created",
           answerAudioKey: null, answerAudioMime: null, answerWords: null, answerText: null, answerDurationMs: null,
           followupText: null, followupQuote: null, followupSkipped: false,
-          followupAudioKey: null, followupAudioMime: null, followupWords: null, error: null, createdAt: new Date(),
+          followupAudioKey: null, followupAudioMime: null, followupWords: null, answerStar: null, storyId: null, error: null, createdAt: new Date(),
         };
         s.attempts.set(row.id, row);
         return clone(row);

@@ -88,7 +88,7 @@ export async function CompareLoader({
 
   const [fbFrom, fbTo] = await Promise.all([repo.feedback.get(from.id), repo.feedback.get(to.id)]);
   if (!fbFrom.metrics || !fbTo.metrics) notFound();
-  const c = compareAttempts({ metrics: fbFrom.metrics, points: fbFrom.points }, { metrics: fbTo.metrics, points: fbTo.points });
+  const c = compareAttempts({ metrics: fbFrom.metrics, points: fbFrom.points, star: from.answerStar }, { metrics: fbTo.metrics, points: fbTo.points, star: to.answerStar });
   const label = (checkId: string) => CHECK_LABELS[checkId] ?? checkId;
   const pairs = ready.slice(1).map((a, i) => ({ from: ready[i].attemptNo, to: a.attemptNo }));
 

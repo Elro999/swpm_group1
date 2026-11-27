@@ -14,6 +14,7 @@ import type {
   QuestionRow,
   Repo,
   SessionRow,
+  StarPart,
   StoryPatch,
   StoryRow,
   StorySentence,
@@ -139,6 +140,8 @@ const toAttempt = (r: Db): AttemptRow => ({
   followupAudioKey: (r.followup_audio_key as string | null) ?? null,
   followupAudioMime: (r.followup_audio_mime as string | null) ?? null,
   followupWords: (r.followup_words as TimedWord[] | null) ?? null,
+  answerStar: (r.answer_star as StarPart[] | null) ?? null,
+  storyId: (r.story_id as string | null) ?? null,
   error: (r.error as string | null) ?? null,
   createdAt: new Date(r.created_at as string),
 });
@@ -156,6 +159,8 @@ const ATTEMPT_COLUMNS: Record<keyof AttemptPatch, string> = {
   followupAudioKey: "followup_audio_key",
   followupAudioMime: "followup_audio_mime",
   followupWords: "followup_words",
+  answerStar: "answer_star",
+  storyId: "story_id",
   error: "error",
 };
 

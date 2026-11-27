@@ -31,6 +31,7 @@ export const EVENT_NAMES = [
   "compare_viewed",
   "point_marked_not_useful",
   "story_added",
+  "story_combined",
   "story_deleted",
   "bodylang_fakedoor_clicked",
   "data_deleted",
