@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { StarProgress } from "@/components/StarProgress";
 import { ui } from "@/components/ui";
 import { STAR_PARTS, type StarPart } from "@/lib/db/types";
 import { useHydrated } from "@/lib/useHydrated";
@@ -125,7 +126,7 @@ export function StoryCard({
             <span className="block font-semibold break-words" data-testid="story-title">
               {name}
             </span>
-            {star && <StarProgress missing={missing} />}
+            {star && <StarProgress missing={missing} className="mt-1" />}
           </span>
           <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${status.cls}`} data-testid="story-state">
             {status.label}
@@ -233,32 +234,6 @@ export function StoryCard({
 
       {confirming && <DeleteDialog story={story} name={name} onCancel={() => setConfirming(false)} onDeleted={() => onDeleted(story)} />}
     </article>
-  );
-}
-
-/** S · T · A · R letters: filled for parts the story has, outlined for missing ones (with a text equivalent). */
-function StarProgress({ missing }: { missing: StarPart[] }) {
-  const have = STAR_PARTS.filter((p) => !missing.includes(p));
-  return (
-    <span className="mt-1 flex items-center gap-1" data-testid="star-progress">
-      {STAR_PARTS.map((p) => {
-        const ok = !missing.includes(p);
-        return (
-          <span
-            key={p}
-            aria-hidden="true"
-            className={`inline-flex size-6 items-center justify-center rounded text-xs font-semibold ${
-              ok ? "bg-indigo-600 text-white" : "border border-dashed border-amber-500 text-amber-800 dark:text-amber-300"
-            }`}
-          >
-            {STAR_LABEL[p][0]}
-          </span>
-        );
-      })}
-      <span className="sr-only">
-        {missing.length ? `Has ${have.map((p) => STAR_LABEL[p]).join(", ") || "no parts"}; missing ${missing.map((p) => STAR_LABEL[p]).join(", ")}.` : "Has all four STAR parts."}
-      </span>
-    </span>
   );
 }
 

@@ -46,9 +46,10 @@ test("retry → compare shows before vs after on the same checks", async ({ page
   await expect(page.getByTestId("resolved-late_decision")).toBeVisible();
   await expect(page.getByTestId("resolved-we_not_i")).toBeVisible();
 
-  // Every check appears for both attempts (G6: same checks).
+  // Every check appears for both attempts (G6: same checks), STAR first (2026-11-27).
   const rows = page.getByTestId("compare-table").locator("tbody tr");
-  expect(await rows.count()).toBe(5);
+  expect(await rows.count()).toBe(6);
+  await expect(page.getByTestId("metric-star")).toContainText("Better");
 
   // A third attempt adds a pair picker; an invalid ?from falls back to the previous attempt.
   await page.getByRole("link", { name: "Practise again" }).click();

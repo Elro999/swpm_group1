@@ -78,10 +78,13 @@ function message(s: StreakSummary): string {
 export function StreakCard({
   nextStep,
   interviewId,
+  compact = false,
 }: {
   nextStep?: { title: string; href: string; minutes: number } | null;
   /** The hub's interview: its date is shown as the milestone. */
   interviewId?: string;
+  /** Inside the header's floating panel (2026-11-27): tighter spacing and a smaller headline. */
+  compact?: boolean;
 }) {
   const { streak: s } = useStreak();
   if (!s) return null;
@@ -95,11 +98,11 @@ export function StreakCard({
   const reviveOn = s.status === "revivable" || s.status === "reviving";
 
   return (
-    <section aria-labelledby="streak-title" className={`${ui.card} flex flex-col gap-4`} data-testid="streak-card" data-status={s.status}>
+    <section aria-labelledby="streak-title" className={`${ui.card} flex flex-col ${compact ? "gap-3 p-4" : "gap-4"}`} data-testid="streak-card" data-status={s.status}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h2 id="streak-title" className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-            <FlameIcon className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+          <h2 id="streak-title" className={`flex items-center gap-2 font-semibold tracking-tight ${compact ? "text-lg" : "text-2xl"}`}>
+            <FlameIcon className={`${compact ? "h-5 w-5" : "h-6 w-6"} text-indigo-600 dark:text-indigo-400`} />
             {headline(s)}
           </h2>
           {facts.length > 0 && <p className={ui.muted}>{facts.join(" · ")}</p>}
@@ -115,7 +118,7 @@ export function StreakCard({
       <ol className="grid grid-cols-7 gap-1" aria-label="This week">
         {s.week.map((d) => (
           <li key={d.date} className="flex flex-col items-center gap-1 text-xs text-zinc-600 dark:text-zinc-400">
-            <span className={`flex h-9 w-9 items-center justify-center rounded-full ${DAY_STYLE[d.interview && (d.state === "future" || d.state === "today") ? "interview" : d.state]}`} aria-hidden="true">
+            <span className={`flex ${compact ? "h-8 w-8" : "h-9 w-9"} items-center justify-center rounded-full ${DAY_STYLE[d.interview && (d.state === "future" || d.state === "today") ? "interview" : d.state]}`} aria-hidden="true">
               {(d.state === "active" || d.state === "revived") && <CheckIcon />}
               {d.state === "rest" && <MoonIcon />}
               {d.state === "today" && !d.interview && <FlameIcon />}

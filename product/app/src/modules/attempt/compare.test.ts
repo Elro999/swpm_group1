@@ -71,3 +71,18 @@ describe("compareAttempts (MF6, G6: same checks, before vs after)", () => {
     expect(none.summary).toMatch(/no issues/i);
   });
 });
+
+describe("STAR in before vs after (2026-11-27)", () => {
+  const side = (star: import("@/lib/db/types").StarPart[] | null) => ({
+    metrics: { timeToDecisionMs: 5000, iCount: 3, weCount: 1, durationMs: 60_000, answeredQuestion: true, competencyShown: true },
+    points: [],
+    star,
+  });
+  it("shows STAR parts as a comparable row", () => {
+    const c = compareAttempts(side(["situation", "action", "result"]), side(["situation", "task", "action", "result"]));
+    expect(c.metrics[0]).toMatchObject({ key: "star", before: "3 of 4", after: "4 of 4", direction: "better" });
+  });
+  it("omits the row when neither attempt was sorted", () => {
+    expect(compareAttempts(side(null), side(null)).metrics.some((m) => m.key === "star")).toBe(false);
+  });
+});

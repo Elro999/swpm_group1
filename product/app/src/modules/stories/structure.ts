@@ -42,6 +42,17 @@ function flagsFor(text: string, part: StarPart): StoryFlag[] {
   return flags;
 }
 
+/**
+ * Story sentences from spans of the text whose STAR part is already known (a practice answer sorted at feedback
+ * time). Actors and flags come from the same code rules as structureStar, so the story looks like any other.
+ */
+export function sentencesFromParts(source: string, spans: { start: number; end: number }[], parts: StarPart[]): StorySentence[] {
+  return spans.map((s, i) => {
+    const text = source.slice(s.start, s.end);
+    return { start: s.start, end: s.end, part: parts[i], actor: codeActor(text), flags: flagsFor(text, parts[i]) };
+  });
+}
+
 export function structureStar(source: string, out: ModelOutput): StarStructure {
   let dropped = 0;
   const labelled: { start: number; end: number; part: StarPart; actor: StoryActor }[] = [];

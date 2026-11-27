@@ -39,3 +39,8 @@ Replaced multi-story pasting and the decision-first card with one titled story p
 - `matchStories(interviewId, { storyIds?, competencyIds?, includeLinked?, replaceChosen? })` replaces "match everything, replace everything": it checks only competencies without a story, never replaces a match or a row with `chosenByUser`, writes a gap where a checked competency has no fit, and sets `interviews.matched_at` once every story added since the last match has been checked. `mapStories` is a thin wrapper for a full run.
 - `setCompetencyStory(competencyId, storyId | null)`: Change (marks `chosenByUser`) and Unlink (gap row; the story stays). Route `PUT /api/competencies/:id/story`.
 - `linkBuiltStory(storyId, competencyId)`: "Build story" checks a new story against one competency only; links it with a verbatim reason or leaves the card as it was. Event `gap_story_filled {source: "build_story"}` when it filled a gap. `POST /api/stories` takes `forCompetencyId` (ownership checked before saving).
+
+## Practice answers (2026-11-27)
+- `source: "practice"` (migration 0007): a story saved from a practice answer (`modules/attempt/story.ts`). Its text is the answer transcript, verbatim; its title is the question (optional to keep; renameable).
+- `similar.ts`: `similarity` / `mostSimilar` decide whether an answer is a story the user already has: overlap of distinctive words (4+ letters, minus common filler), at least 6 shared and 40% of the shorter text (proposed thresholds). Code-owned and deterministic; no AI call. Tests: `similar.test.ts`.
+- `structure.ts` `sentencesFromParts`: story sentences from spans whose STAR part is already known (actors and flags by the same code rules).

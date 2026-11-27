@@ -115,6 +115,12 @@ Acceptance criteria use Given / When / Then. Each requirement also needs a negat
 
 **MF4 Delivery feedback pinned to lines**
 - Given a transcript, then the screen shows: **time to decision** (seconds until the sentence stating his decision), **I vs we** counts, **length vs ~2-minute target**; each metric links to the timestamped line(s) behind it.
+- *(Added 2026-11-27, Rohith)* **STAR** is a fourth check on the same screen, not a separate one: which of Situation / Task / Action / Result the listener heard (same S·T·A·R marks as My stories) and whether the answer flows in order (going back to the Situation or Task after the Action began is flagged; a decision headline first is allowed). Each missing part or order break is a pinned point that quotes the sentence where it was expected and asks the STAR question; the transcript tags each sentence with its part. Not: any suggested wording.
+
+**MF8 Practice answer saved to My stories** *(added 2026-11-27, Rohith)*
+- Given feedback on an answer that is **not similar** to any story in My stories, then the answer is saved as a new story automatically: the user's exact words, titled with the question, sorted into STAR with the labels used for the feedback; the screen says "Added to My stories" with its S·T·A·R marks and an "Open in My stories" link to fill the gaps.
+- Given an answer **similar** to an existing story (a retry of the same question, or a re-telling: shared distinctive words), then nothing is saved on its own; the screen offers **Combine with this story** (adds only the sentences the story does not already contain, verbatim, then re-sorts it) or **Save as a new story**, or **Not now**.
+- Not: rewriting the answer, merging by paraphrase, or saving the same story twice without asking.
 
 **MF5 Fit feedback, no rewrite**
 - Given a transcript and the question's competency, then feedback states whether the question was answered and whether the competency was shown, citing verbatim lines.

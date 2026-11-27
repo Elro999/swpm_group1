@@ -2,7 +2,8 @@ import { expect, test } from "@playwright/test";
 import { installFakeMic } from "./fixtures/fake-mic";
 
 // Prep streak: adding an interview starts the streak (any prep action counts); watching feedback shows the
-// "streak kept" confirmation; the header chip and the hub card agree. Rest days and revives are unit-tested
+// "streak kept" confirmation; the header chip opens the streak in a floating panel (2026-11-27: the big card
+// left the role page). Rest days and revives are unit-tested
 // (src/modules/streak/streak.test.ts) because they need several calendar days.
 
 test.beforeEach(async ({ page }) => {
@@ -15,8 +16,11 @@ test("adding an interview starts the streak; feedback confirms the day", async (
   await page.getByRole("button", { name: "Create my questions" }).click();
   await expect(page).toHaveURL(/\/i\/[0-9a-f-]{36}$/);
   const hubUrl = page.url();
-
-  const card = page.getByTestId("streak-card");
+  // The streak no longer takes the middle of the role page: it opens from the header chip.
+  await expect(page.locator("main").getByTestId("streak-card")).toHaveCount(0);
+  await page.getByTestId("streak-chip").click();
+  await expect(page.getByTestId("streak-chip")).toHaveAttribute("aria-expanded", "true");
+  const card = page.getByTestId("streak-popover").getByTestId("streak-card");
   await expect(card).toHaveAttribute("data-status", "active_today");
   await expect(card.getByRole("heading", { name: "1-day streak" })).toBeVisible();
   // No interview date was entered: the streak works, with no countdown and no milestone.
@@ -27,6 +31,10 @@ test("adding an interview starts the streak; feedback confirms the day", async (
   await expect(card.getByTestId("streak-week")).toHaveText("This week: 1 prep day · 0 practice reps");
   await expect(page.getByTestId("streak-chip")).toHaveText("1");
   await expect(page.getByTestId("streak-chip")).toHaveAttribute("aria-label", "Prep streak: 1 day, today counts");
+  // Esc closes the panel and returns focus to the chip.
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("streak-popover")).toHaveCount(0);
+  await expect(page.getByTestId("streak-chip")).toBeFocused();
 
   // Practise one question to feedback: the confirmation appears and the rep is counted.
   await page.getByRole("button", { name: "I agree, let me practise" }).click();
@@ -41,6 +49,7 @@ test("adding an interview starts the streak; feedback confirms the day", async (
   await expect(page.getByTestId("streak-toast")).toHaveText("Day 1. Your prep streak has started.");
 
   await page.goto(hubUrl);
+  await page.getByTestId("streak-chip").click();
   await expect(page.getByTestId("streak-week")).toHaveText("This week: 1 prep day · 1 practice rep");
 });
 
@@ -51,7 +60,7 @@ test("a new visitor sees no streak chip", async ({ browser }) => {
   await expect(page.getByTestId("streak-chip")).toHaveCount(0);
 });
 
-test("the interview date is a milestone on the streak card", async ({ page }) => {
+test("the interview date is a milestone in the streak panel", async ({ page }) => {
   const inDays = (n: number) => new Date(Date.now() + n * 86_400_000).toLocaleDateString("en-CA");
   await page.goto("/");
   await page.getByRole("button", { name: "Try with a sample JD" }).click();
@@ -59,7 +68,8 @@ test("the interview date is a milestone on the streak card", async ({ page }) =>
   await page.getByRole("button", { name: "Create my questions" }).click();
   await expect(page).toHaveURL(/\/i\/[0-9a-f-]{36}$/);
 
-  const card = page.getByTestId("streak-card");
+  await page.getByTestId("streak-chip").click();
+  const card = page.getByTestId("streak-popover").getByTestId("streak-card");
   await expect(card).toContainText("5 days to your interview");
   const milestone = card.getByTestId("streak-milestone");
   await expect(milestone).toHaveAttribute("data-status", "upcoming");

@@ -3,13 +3,19 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { refreshStreak } from "@/components/streak/useStreak";
 import { StreakToast } from "@/components/streak/StreakToast";
+import { StarProgress } from "@/components/StarProgress";
 import { ui } from "@/components/ui";
 import type { AttemptView } from "@/modules/attempt/view";
 import { formatMs } from "@/modules/feedback/transcript";
+import { STAR_LABEL } from "@/modules/stories/star";
+import { StoryNotice } from "./StoryNotice";
 
 /**
  * Feedback screen (task 2.7; MF4, MF5, MF7). Every point shows the user's own words and the moment
  * they said them; clicking the time plays the recording from there. Nothing here suggests new wording.
+ * 2026-11-27: STAR is one of the checks, not a separate screen: a fourth tile next to decision, I/we and length
+ * (common region, same tile shape), STAR points in the same list, and each transcript sentence tagged with its
+ * part so the flow S → T → A → R is visible. The answer is saved to My stories (StoryNotice).
  */
 type Point = NonNullable<AttemptView["feedback"]>["points"][number];
 
@@ -21,7 +27,8 @@ const SEVERITY: Record<Point["severity"], { label: string; cls: string }> = {
 
 const TARGET_MS = 120_000;
 
-export function FeedbackView({ view }: { view: AttemptView }) {
+export function FeedbackView({ view: initialView }: { view: AttemptView }) {
+  const [view, setView] = useState(initialView);
   const fb = view.feedback!;
   const answer = view.answer!;
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -105,6 +112,27 @@ export function FeedbackView({ view }: { view: AttemptView }) {
     </div>
   );
   const has = (id: string) => fb.points.some((p) => p.checkId === id);
+  const star = view.star;
+  const firstMissing = star?.missing[0];
+  const starTile = star && (
+    <div className={ui.card} data-testid="star-tile">
+      <p className={ui.muted}>STAR</p>
+      <StarProgress missing={star.missing} size="md" className="mt-1.5" />
+      <p className={`mt-2 ${ui.muted}`}>
+        {firstMissing ? (
+          <a href={`#point-star_missing_${firstMissing}`} className={ui.link}>
+            No {star.missing.map((p) => STAR_LABEL[p]).join(" or ")}: see where
+          </a>
+        ) : star.outOfOrderAt !== null ? (
+          <a href="#point-star_order" className={ui.link}>
+            Out of order: see where
+          </a>
+        ) : (
+          "All four, in order"
+        )}
+      </p>
+    </div>
+  );
 
   return (
     <section aria-labelledby="feedback-title" className="flex flex-col gap-6" data-testid="feedback">
@@ -113,7 +141,8 @@ export function FeedbackView({ view }: { view: AttemptView }) {
         Feedback{view.attemptNo > 1 ? ` · attempt ${view.attemptNo}` : ""}
       </h2>
 
-      <div className="grid gap-3 sm:grid-cols-3" data-testid="metrics">
+      <div className={`grid gap-3 ${star ? "grid-cols-2 sm:grid-cols-4" : "sm:grid-cols-3"}`} data-testid="metrics">
+        {starTile}
         {tile(
           "Time to your decision",
           m.timeToDecisionMs === null ? "Not found" : formatMs(m.timeToDecisionMs),
@@ -123,6 +152,8 @@ export function FeedbackView({ view }: { view: AttemptView }) {
         {tile("“I” vs “we”", `${m.iCount} / ${m.weCount}`, has("we_not_i") ? "More “we” than “I”: see where" : "Your role comes through", has("we_not_i") ? "point-we_not_i" : undefined)}
         {tile("Length", formatMs(m.durationMs), m.durationMs > TARGET_MS ? `Over the ~${formatMs(TARGET_MS)} target` : `Within ~${formatMs(TARGET_MS)}`, has("too_long") ? "point-too_long" : undefined)}
       </div>
+
+      <StoryNotice view={view} onChange={setView} />
 
       <ul className="flex flex-wrap gap-2 text-sm">
         <li className={ui.chip}>Answered the question: {m.answeredQuestion === null ? "unclear" : m.answeredQuestion ? "yes" : "not quite"}</li>
@@ -139,6 +170,7 @@ export function FeedbackView({ view }: { view: AttemptView }) {
             <li key={p.id} id={`point-${p.checkId}`} className={`${ui.card} ${notUseful[p.id] ? "opacity-60" : ""}`} data-testid="point">
               <div className="flex flex-wrap items-center gap-2">
                 <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${SEVERITY[p.severity].cls}`}>{SEVERITY[p.severity].label}</span>
+                {p.checkId.startsWith("star_") && <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500">STAR</span>}
                 <button type="button" className={ui.link} onClick={() => playFrom(p.startMs)} disabled={!audioUrl} aria-label={`Play from ${formatMs(p.startMs)}`}>
                   ▶ {formatMs(p.startMs)}
                 </button>
@@ -186,20 +218,39 @@ export function FeedbackView({ view }: { view: AttemptView }) {
 
       <details className={ui.card} open>
         <summary className="cursor-pointer font-medium">Your answer, word for word</summary>
-        <p className="mt-3 leading-8" data-testid="transcript">
-          {answer.words.map((w, i) => {
-            const sev = highlighted.get(i);
-            const cls =
-              sev === "fix" ? "bg-red-100 dark:bg-red-900/50" : sev === "warn" ? "bg-amber-100 dark:bg-amber-900/50" : sev === "info" ? "bg-emerald-100 dark:bg-emerald-900/50" : "";
-            return (
-              <span key={i}>
-                <span className={`${cls} cursor-pointer rounded-sm`} onClick={() => playFrom(w.start)}>
-                  {w.w}
-                </span>{" "}
+        {star && <p className={`mt-2 ${ui.muted}`}>Each sentence is tagged with the STAR part it tells, so you can see the order the listener heard.</p>}
+        <ol className="mt-3 flex flex-col gap-1.5" data-testid="transcript">
+          {answer.sentences.map((s, si) => (
+            <li key={si} className="flex gap-3 leading-8" data-testid="transcript-sentence" data-part={s.part ?? undefined}>
+              {s.part && (
+                <span
+                  className={`mt-1.5 inline-flex size-6 shrink-0 items-center justify-center rounded text-xs font-semibold ${
+                    star?.outOfOrderAt === si ? "border border-amber-500 text-amber-800 dark:text-amber-300" : "bg-indigo-50 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200"
+                  }`}
+                  title={STAR_LABEL[s.part]}
+                >
+                  <span aria-hidden="true">{STAR_LABEL[s.part][0]}</span>
+                  <span className="sr-only">{STAR_LABEL[s.part]}:</span>
+                </span>
+              )}
+              <span>
+                {answer.words.slice(s.firstWord, s.lastWord + 1).map((w, k) => {
+                  const i = s.firstWord + k;
+                  const sev = highlighted.get(i);
+                  const cls =
+                    sev === "fix" ? "bg-red-100 dark:bg-red-900/50" : sev === "warn" ? "bg-amber-100 dark:bg-amber-900/50" : sev === "info" ? "bg-emerald-100 dark:bg-emerald-900/50" : "";
+                  return (
+                    <span key={i}>
+                      <span className={`${cls} cursor-pointer rounded-sm`} onClick={() => playFrom(w.start)}>
+                        {w.w}
+                      </span>{" "}
+                    </span>
+                  );
+                })}
               </span>
-            );
-          })}
-        </p>
+            </li>
+          ))}
+        </ol>
       </details>
 
       {view.followup && (

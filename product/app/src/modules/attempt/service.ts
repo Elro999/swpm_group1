@@ -6,7 +6,10 @@ import type { LlmProvider, SttProvider } from "@/modules/ai/types";
 import { recordEvent } from "@/modules/events/events";
 import { buildFeedback } from "@/modules/feedback/build";
 import { verifyFollowup } from "@/modules/feedback/guards";
+import { answerStarParts } from "@/modules/feedback/star";
 import { buildCanonical } from "@/modules/feedback/transcript";
+import { structureStar } from "@/modules/stories/structure";
+import { autoSaveAnswerStory } from "./story";
 
 /**
  * The practice attempt pipeline (MF2–MF7; state machine in doc 02 §4).
@@ -217,12 +220,30 @@ async function advance(deps: AttemptDeps, sessionId: string, owned: OwnedQuestio
       const competency = question.competencyId
         ? (await repo.competencies.listByInterview(interview.id)).find((c) => c.id === question.competencyId)?.label ?? ""
         : "";
-      const res = await withAiCall(repo, { sessionId, purpose: "fit_feedback", provider: llm.name }, () =>
-        llm.run("fit_feedback", { question: question.text, competency, transcript: canonical.text, sentences: canonical.sentences.map((s) => s.text) }),
-      );
-      const built = buildFeedback(words, durationMs, res.data, { question: question.text, competency });
+      // STAR (2026-11-27): the same sorter as My stories labels each of the user's sentences; it runs alongside
+      // the feedback call (no extra wait). Best effort: if it fails, feedback still comes, without the STAR checks.
+      // A resumed attempt keeps labels already found.
+      const sortStar = a.answerStar
+        ? Promise.resolve(a.answerStar)
+        : withAiCall(repo, { sessionId, purpose: "story_structure", provider: llm.name }, () => llm.run("story_structure", { text: canonical.text }))
+            .then((r) => answerStarParts(canonical, structureStar(canonical.text, r.data)))
+            .catch((err) => {
+              console.error("answer STAR sort failed", { name: (err as Error)?.name });
+              return null;
+            });
+      const [res, star] = await Promise.all([
+        withAiCall(repo, { sessionId, purpose: "fit_feedback", provider: llm.name }, () =>
+          llm.run("fit_feedback", { question: question.text, competency, transcript: canonical.text, sentences: canonical.sentences.map((s) => s.text) }),
+        ),
+        sortStar,
+      ]);
+      if (star && !a.answerStar) a = await repo.attempts.update(a.id, { answerStar: star });
+      const built = buildFeedback(words, durationMs, res.data, { question: question.text, competency, star });
       await repo.feedback.save(a.id, built.metrics, built.points); // also marks the attempt ready, in one transaction
       a = { ...a, status: "ready", error: null };
+      // A new story told while practising goes into My stories (similar ones are offered on the feedback screen).
+      const saved = await autoSaveAnswerStory(repo, sessionId, a, question);
+      if (saved) a = { ...a, storyId: saved.id };
     }
     return a;
   } catch (err) {

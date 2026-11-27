@@ -52,20 +52,31 @@ test("every main screen passes the automated accessibility scan", async ({ page 
   await expect(page.getByTestId("compare-table")).toBeVisible();
   await scan(page, "compare");
 
+  // The practice answer was saved to My stories (2026-11-27), so the bank has one story: open the form to add another.
   await page.goto("/stories");
-  await scan(page, "stories (empty, form open)");
+  await expect(page.getByTestId("story-card")).toHaveCount(1);
+  await scan(page, "stories (one saved from practice)");
+  await page.getByRole("button", { name: "Add a story" }).click();
+  await scan(page, "stories (form open)");
   await page.getByLabel("Title", { exact: true }).fill("Checkout drop-off");
   await page.getByLabel("Your story", { exact: true }).fill(
     "Our checkout lost small merchants every month. I decided to run discovery interviews with merchants. Drop-off fell by 18% in one quarter.",
   );
   await page.getByRole("button", { name: "Save story" }).click();
-  await expect(page.getByTestId("story-card")).toHaveCount(1);
+  await expect(page.getByTestId("story-card")).toHaveCount(2);
   await scan(page, "stories (card open, Task missing)");
-  await page.getByRole("button", { name: "Delete" }).click();
+  await page.getByRole("button", { name: "Delete" }).first().click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await scan(page, "stories (delete dialog)");
 
+  await page.keyboard.press("Escape");
+
+  // The streak panel (2026-11-27; the guided tour is scanned in tour-and-practice-story.spec.ts).
   await page.goto("/privacy");
+  await page.getByTestId("streak-chip").click();
+  await expect(page.getByTestId("streak-popover")).toBeVisible();
+  await scan(page, "streak panel");
+  await page.keyboard.press("Escape");
   await scan(page, "privacy");
 
   await page.goto("/admin");

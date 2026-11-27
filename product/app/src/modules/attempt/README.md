@@ -17,6 +17,8 @@ any step ──error──▶ failed   (stored data kept; resumeAttempt re-runs 
 - **Audio:** `audio/*` only (webm, mp4, ogg, mpeg, wav, m4a, aac), non-empty, ≤ 4 MB. Stored under `sessionId/attemptId/part` via `lib/audio.ts`.
 - **One follow-up (MF3):** generated after the answer is transcribed, verified by `feedback/guards.verifyFollowup` (quote must be in the answer, else a fixed decision probe).
 - **Feedback** is built by `modules/feedback` from the main answer; the follow-up answer is transcribed and shown, not scored.
+- **STAR (2026-11-27):** in the analyse step the answer is sorted into STAR by the same `story_structure` call as My stories, **in parallel** with `fit_feedback` (no extra wait). The part of each canonical sentence is stored in `attempts.answer_star` and feeds the STAR checks (`feedback/star.ts`). Best effort: if the sort fails, feedback still comes without STAR checks.
+- **My stories (2026-11-27, `story.ts`):** after feedback, `autoSaveAnswerStory` saves the answer as a new story (`source: "practice"`, verbatim transcript, titled with the question, STAR sentences from `answer_star`) **unless** it is similar to an existing story: the story an earlier attempt at the same question was saved to, else `stories/similar.ts`. `saveAnswerStory` handles the user's choice on the feedback screen (`POST /api/attempts/:id/story`): `new`, or `combine` (appends only the answer's sentences the story does not contain, verbatim, then `updateStory` re-sorts it; event `story_combined {added_sentences}`). `attempts.story_id` records the link; deleting the story clears it. Never fails the attempt.
 - **Events (server-side):** `recording_started`, `retry_started` (attempt 2+), `attempt_transcribed`, `followup_shown`; `markFeedbackViewed` → `feedback_viewed` (once per attempt), `first_feedback_viewed` (once per session, with `ms_since_start` for goal G1), `retry_feedback_viewed`; `ratePoint` → `point_marked_not_useful`.
 - **Logs** carry the failed stage and error name only, never user content.
 
@@ -24,9 +26,10 @@ any step ──error──▶ failed   (stored data kept; resumeAttempt re-runs 
 | File | Role |
 |---|---|
 | `service.ts` | State machine, ownership/consent checks, view and rating events |
-| `view.ts` | `AttemptView`: what the browser gets (own transcript and feedback; no audio keys) |
+| `view.ts` | `AttemptView`: what the browser gets (own transcript and feedback, STAR part per sentence, `star` summary, `story` link: saved / similar / can save; no audio keys) |
+| `story.ts` | Practice answer → My stories: `autoSaveAnswerStory`, `saveAnswerStory`, `findSimilarStory`, `titleFromQuestion` |
 | `deps.ts` | Production wiring (`getAttemptDeps`), `respondWithView`, error → HTTP mapping |
-| `compare.ts` | `compareAttempts(before, after)` (Phase 3, MF6/G6): pure before vs after on the **same five checks** (time to decision, I vs we share, length, answered, competency shown) with better/worse/same, and issues matched by **`checkId`** into fixed / still there / new; strengths (`strong_moment`) listed separately, never as issues. `CHECK_LABELS` for display |
+| `compare.ts` | `compareAttempts(before, after)` (Phase 3, MF6/G6): pure before vs after on the **same checks** (STAR parts, when either attempt was sorted (2026-11-27); time to decision, I vs we share, length, answered, competency shown) with better/worse/same, and issues matched by **`checkId`** into fixed / still there / new; strengths (`strong_moment`) listed separately, never as issues. `CHECK_LABELS` for display |
 
 ## Before vs after (Phase 3)
 `/i/[id]/mock/[qid]/compare` (`CompareLoader.tsx`): owner only; needs ≥ 2 finished attempts (otherwise a "practise twice" message). Defaults to the last two finished attempts; `?from=N&to=M` picks a pair (invalid values fall back to the previous attempt). With 3+ attempts a pair picker appears. The feedback screen links to it ("Compare with attempt N−1") from attempt 2 on. Fires the client event `compare_viewed {from, to}`.
